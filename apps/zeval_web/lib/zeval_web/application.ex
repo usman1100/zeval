@@ -5,7 +5,11 @@ defmodule ZevalWeb.Application do
   def start(_type, _args) do
     children = [
       ZevalWeb.Endpoint,
-      {Phoenix.PubSub, [name: ZevalWeb.PubSub, adapter: Phoenix.PubSub.PG2]}
+      {Phoenix.PubSub, [name: ZevalWeb.PubSub, adapter: Phoenix.PubSub.PG2]},
+      # Prometheus metrics aggregator
+      {TelemetryMetricsPrometheus.Core, [metrics: ZevalWeb.Telemetry.metrics()]},
+      # Rate limiter (Hammer ETS backend)
+      {ZevalWeb.RateLimiter, [clean_period: :timer.minutes(10)]}
     ]
 
     opts = [strategy: :one_for_one, name: ZevalWeb.Supervisor]

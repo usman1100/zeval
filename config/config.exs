@@ -24,4 +24,16 @@ config :logger, :default_formatter,
   format: "$time $metadata[$level] $message\n",
   metadata: [:request_id, :tenant_id]
 
+# Prometheus metrics config — installed via supervision tree child
+# Telemetry poller for VM metrics
+config :telemetry_poller,
+  period: :timer.seconds(10),
+  measurements: [
+    {:process_info, [:message_queue_len, :memory, :status]},
+    {:vm, [:total_run_queue_lengths, :memory, :total]}
+  ]
+
+# Rate limiting backend
+config :hammer, backend: :ets
+
 import_config "#{config_env()}.exs"
