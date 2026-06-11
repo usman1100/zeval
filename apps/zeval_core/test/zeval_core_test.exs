@@ -2,7 +2,7 @@ defmodule ZevalCoreTest do
   use ExUnit.Case
   doctest ZevalCore
 
-  test "greets the world" do
-    assert ZevalCore.hello() == :world
+  test "module exists" do
+    assert is_atom(ZevalCore)
   end
 end

@@ -1,18 +1,5 @@
 defmodule ZevalCore do
   @moduledoc """
-  Documentation for `ZevalCore`.
+  Core engine logic for Zeval — a Zanzibar-inspired authorization engine.
   """
-
-  @doc """
-  Hello world.
-
-  ## Examples
-
-      iex> ZevalCore.hello()
-      :world
-
-  """
-  def hello do
-    :world
-  end
 end
