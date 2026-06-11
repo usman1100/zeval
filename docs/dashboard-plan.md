@@ -363,12 +363,130 @@ apps/zeval_web/lib/zeval_web/controllers/dashboard_session_controller.ex
 ```
 apps/zeval_web/lib/zeval_web/plugs/dashboard_auth.ex
 ```
-- Matches on `/dashboard/*` paths
-- Checks `Plug.Conn.get_session(conn, :current_user_id)`
-- Loads user from DB, assigns `conn.assigns.current_user`
-- Redirects to `/dashboard/login` if not authenticated
 
-### 5.2 Tenant listing endpoint
+**⚠️ Critical: avoid redirect loop on login page.**
+
+The auth plug must skip `/dashboard/login` and `/dashboard/logout`.
+The cleanest approach is to apply it via **router `pipe_through`** so
+public routes are explicitly excluded:
+
+```elixir
+# In router.ex
+
+scope "/dashboard", ZevalWeb do
+  # Public routes — no auth
+  get "/login", DashboardSessionController, :new
+  post "/login", DashboardSessionController, :create
+  get "/logout", DashboardSessionController, :delete
+
+  # Protected routes — requires session
+  scope "/", ZevalWeb do
+    pipe_through [:dashboard_auth]
+
+    live "/", DashboardLive.HomeLive, :index
+    live "/tenants", DashboardLive.TenantLive, :index
+    live "/tenants/:id", DashboardLive.TenantDetailLive, :show
+    live "/api-keys", DashboardLive.ApiKeyLive, :index
+    live "/namespaces", DashboardLive.NamespaceLive, :index
+    live "/namespaces/:id/edit", DashboardLive.NamespaceEditorLive, :edit
+    live "/tuples", DashboardLive.TupleLive, :index
+    live "/check", DashboardLive.CheckLive, :index
+    live "/expand", DashboardLive.ExpandLive, :index
+  end
+end
+```
+
+The plug itself is straightforward — if no session, redirect:
+
+```elixir
+defmodule ZevalWeb.Plugs.DashboardAuth do
+  import Plug.Conn
+
+  def init(opts), do: opts
+
+  def call(conn, _opts) do
+    case get_session(conn, :current_user_id) do
+      nil ->
+        conn
+        |> put_session(:return_to, conn.request_path)
+        |> redirect(to: "/dashboard/login")
+        |> halt()
+
+      user_id ->
+        case ZevalCore.DashboardUsers.get(user_id) do
+          nil ->
+            conn
+            |> delete_session(:current_user_id)
+            |> redirect(to: "/dashboard/login")
+            |> halt()
+
+          user ->
+            assign(conn, :current_user, user)
+        end
+    end
+  end
+end
+```
+
+### 5.2 Session security
+
+```elixir
+# In endpoint.ex
+plug Plug.Session,
+  store: :cookie,
+  key: "_zeval_dashboard",
+  signing_salt: "change-me-in-prod",
+  encryption_salt: "change-me-in-prod",
+  http_only: true,
+  secure: Application.get_env(:zeval_web, :env) == :prod,
+  same_site: "Lax"
+```
+
+Consider adding:
+- Idle timeout (re-auth after inactivity)
+- Absolute timeout (max 12h session lifetime)
+- Session regeneration on login (prevents session fixation)
+
+### 5.3 Login hardening
+
+- Rate limit login attempts using Hammer (same ETS backend)
+- Show last login time on the dashboard home page
+- Log all failed login attempts
+
+### 5.4 Future-proofing permissions
+
+Dashboard users are super-admin for v1. For v2, the system can dogfood
+its own Zanzibar model:
+
+```elixir
+# Store dashboard_users as subjects
+# Check access using the engine itself
+ZevalCore.Check.check(
+  "global",                # system namespace
+  "dashboard_access",       # resource
+  "view",                  # action
+  {:user, "user:123"}      # current dashboard user
+)
+```
+
+This would allow tenant-scoped dashboard users, read-only auditors,
+and granular permission levels without changing the auth framework.
+
+### 5.5 Audit logging
+
+Every dashboard write operation (create namespace, write tuples, revoke
+key) should log:
+
+```elixir
+Logger.info("namespace.created", %{
+  actor_id: current_user.id,
+  actor_email: current_user.email,
+  action: "namespace.created",
+  target: namespace_id,
+  tenant_id: tenant_id
+})
+
+### 5.6 Tenant listing endpoint
 
 Add a `GET /api/v1/dashboard/tenants` endpoint (or reuse the existing
 `POST /api/v1/tenants` pattern — but for listing, need a new GET route).
