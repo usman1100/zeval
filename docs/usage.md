@@ -23,12 +23,12 @@ Returns:
 {"tenant":{"id":"03f00a3f-...","name":"my-org"}}
 ```
 
-### 3. Create an API key (no auth required)
+### 3. Create an API key (no auth required, needs tenant_id)
 
 ```bash
 curl -s -X POST http://localhost:4000/api/v1/service-accounts \
   -H "Content-Type: application/json" \
-  -d '{"name":"default-key"}'
+  -d '{"name":"default-key","tenant_id":"<PASTE_TENANT_ID_HERE>"}'
 ```
 
 Returns the `raw_key` once — **save it**:
@@ -39,7 +39,7 @@ Returns the `raw_key` once — **save it**:
 All subsequent calls use this key:
 ```bash
 KEY="perm_dev_abc123..."
-AUTH=*** Bearer $KEY"
+AUTH="Authorization: Bearer $KEY"
 ```
 
 ### 4. Define a namespace config

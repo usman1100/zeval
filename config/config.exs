@@ -18,6 +18,8 @@ config :zeval_web, ZevalWeb.Endpoint,
 config :logger, :default_handler,
   level: :info
 
+config :zeval_web, env: "dev"
+
 config :logger, :default_formatter,
   format: "$time $metadata[$level] $message\n",
   metadata: [:request_id, :tenant_id]

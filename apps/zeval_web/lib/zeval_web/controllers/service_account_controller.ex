@@ -3,8 +3,7 @@ defmodule ZevalWeb.ServiceAccountController do
 
   alias ZevalCore.ServiceAccounts
 
-  def create(conn, %{"name" => name}) do
-    tenant_id = conn.assigns.tenant_id
+  def create(conn, %{"name" => name, "tenant_id" => tenant_id}) do
 
     case ServiceAccounts.create(tenant_id, name) do
       {:ok, %{account: account, raw_key: raw_key}} ->
@@ -25,7 +24,7 @@ defmodule ZevalWeb.ServiceAccountController do
   end
 
   def create(conn, _) do
-    ZevalWeb.JsonHelpers.bad_request(conn, "name is required")
+    ZevalWeb.JsonHelpers.bad_request(conn, "name and tenant_id are required")
   end
 
   def revoke(conn, %{"id" => id}) do
