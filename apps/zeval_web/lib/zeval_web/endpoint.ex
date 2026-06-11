@@ -1,6 +1,8 @@
 defmodule ZevalWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :zeval_web
 
+  # No sockets — this is a JSON-only API
+
   plug Plug.RequestId
   plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
 

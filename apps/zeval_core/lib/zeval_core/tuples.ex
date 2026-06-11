@@ -11,6 +11,8 @@ defmodule ZevalCore.Tuples do
   alias ZevalCore.Repo
   alias ZevalCore.Tuples.{Tuple, RelationTuple, Zookie}
 
+  require Logger
+
   @doc """
   Writes one or more relation tuples. Accepts `%Tuple{}` structs or
   raw maps. Returns `{:ok, zookie}` with the number of written tuples
@@ -35,6 +37,10 @@ defmodule ZevalCore.Tuples do
         end)
 
       {:ok, zookie} = Zookie.mint(tenant_id)
+
+      # Emit telemetry for Watch endpoint
+      :telemetry.execute([:zeval, :tuples, :written], %{count: count}, %{tenant_id: tenant_id})
+
       %{written: count, zookie: zookie.token}
     end)
     |> case do
@@ -67,6 +73,10 @@ defmodule ZevalCore.Tuples do
         end)
 
       {:ok, zookie} = Zookie.mint(tenant_id)
+
+      # Emit telemetry for Watch endpoint
+      :telemetry.execute([:zeval, :tuples, :deleted], %{count: count}, %{tenant_id: tenant_id})
+
       %{deleted: count, zookie: zookie.token}
     end)
     |> case do

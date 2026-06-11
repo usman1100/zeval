@@ -9,6 +9,7 @@ config :zeval_core, ZevalCore.Repo,
 config :zeval_web, ZevalWeb.Endpoint,
   url: [host: "localhost"],
   adapter: Bandit.PhoenixAdapter,
+  pubsub_server: ZevalWeb.PubSub,
   render_errors: [
     formats: [json: ZevalWeb.ErrorJSON],
     layout: false
