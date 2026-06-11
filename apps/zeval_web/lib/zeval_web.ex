@@ -1,18 +1,5 @@
 defmodule ZevalWeb do
   @moduledoc """
-  Documentation for `ZevalWeb`.
+  Phoenix web layer for Zeval Engine.
   """
-
-  @doc """
-  Hello world.
-
-  ## Examples
-
-      iex> ZevalWeb.hello()
-      :world
-
-  """
-  def hello do
-    :world
-  end
 end
