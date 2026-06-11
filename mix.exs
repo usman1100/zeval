@@ -26,7 +26,7 @@ defmodule ZevalEngine.MixProject do
       # Phoenix and web layer
       {:phoenix, "~> 1.7"},
       {:phoenix_ecto, "~> 4.5"},
-      {:plug_cowboy, "~> 2.7"},
+      {:bandit, "~> 1.5"},
       {:jason, "~> 1.4"},
 
       # Database
