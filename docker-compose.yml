@@ -1,0 +1,18 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: zeval_dev
+      POSTGRES_USER: zeval
+      POSTGRES_PASSWORD: zeval
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zeval -d zeval_dev"]
+      interval: 2s
+      retries: 10
+
+volumes:
+  pgdata:
