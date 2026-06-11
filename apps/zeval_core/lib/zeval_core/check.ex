@@ -31,6 +31,8 @@ defmodule ZevalCore.Check do
   """
   @spec check(binary(), String.t(), String.t(), String.t(), term(), keyword()) :: result()
   def check(tenant_id, namespace, object_id, relation, subject, opts \\ []) do
+    start = System.monotonic_time()
+
     state = %{
       tenant_id: tenant_id,
       zookie: Keyword.get(opts, :consistency),
@@ -39,10 +41,28 @@ defmodule ZevalCore.Check do
       depth: 0
     }
 
-    case do_check(state, namespace, object_id, relation, subject) do
-      {allowed, final_state} ->
-        %{allowed: allowed, path: final_state.path |> Enum.reverse()}
-    end
+    result =
+      case do_check(state, namespace, object_id, relation, subject) do
+        {allowed, final_state} ->
+          %{allowed: allowed, path: final_state.path |> Enum.reverse()}
+      end
+
+    duration = System.monotonic_time() - start
+
+    :telemetry.execute(
+      [:zeval, :check, :stop],
+      %{duration: duration},
+      %{
+        tenant_id: tenant_id,
+        namespace: namespace,
+        object_id: object_id,
+        relation: relation,
+        allowed: result.allowed,
+        depth: state.depth
+      }
+    )
+
+    result
   end
 
   # ============================================================================
