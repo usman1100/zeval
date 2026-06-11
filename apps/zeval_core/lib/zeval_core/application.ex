@@ -4,7 +4,8 @@ defmodule ZevalCore.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      ZevalCore.Repo
+      ZevalCore.Repo,
+      ZevalCore.Namespace.Cache
     ]
 
     opts = [strategy: :one_for_one, name: ZevalCore.Supervisor]
