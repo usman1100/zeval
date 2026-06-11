@@ -14,5 +14,19 @@ services:
       interval: 2s
       retries: 10
 
+  engine:
+    build: .
+    ports:
+      - "4000:4000"
+    environment:
+      DATABASE_URL: postgres://zeval:zeval@db/zeval_dev
+      SECRET_KEY_BASE: aBsYGEkVN1OTVE76YSV6sH5HxBJSEoKRs4BYx4HgW3b5SRbNMvyy3qvbhqRYsF54
+      ENGINE_PORT: "4000"
+      LOG_LEVEL: info
+      POOL_SIZE: "10"
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   pgdata:
