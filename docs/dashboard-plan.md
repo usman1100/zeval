@@ -259,68 +259,75 @@ Each node:
 
 ---
 
-## 4. CSS-only UI (no JS frameworks)
+## 4. Tailwind CSS styling
+
+### Setup
+
+Tailwind is already available in the Phoenix project — it's included in
+`mix.exs` as `{:tailwind, "~> 0.2"}`. The `config.exs` configures the
+Tailwind CLI to watch `apps/zeval_web/lib/zeval_web/**/*.heex` and output
+to `priv/static/assets/app.css`.
+
+No additional setup needed. The dashboard templates live under
+`apps/zeval_web/lib/zeval_web/live/` and `apps/zeval_web/lib/zeval_web/templates/dashboard/`,
+which are already in the Tailwind content paths.
 
 ### Design: Dark theme
 
-- Background: `#0d1117` (GitHub dark)
-- Surface: `#161b22`
-- Border: `#30363d`
-- Text: `#e6edf3`
-- Muted text: `#8b949e`
-- Blue accent: `#58a6ff`
-- Green: `#3fb950`
-- Red: `#f85149`
+The Phoenix app's `root.html.heex` layout already includes the dark
+theme setup via CSS custom properties. The dashboard uses the same
+Tailwind dark classes.
 
-### CSS patterns
+Key Tailwind classes used:
 
-Use utility-first CSS (custom, not Tailwind):
+| Element | Classes |
+|---------|---------|
+| Layout grid | `grid grid-cols-[260px_1fr] h-screen` |
+| Sidebar | `bg-gray-900 border-r border-gray-700 p-4` |
+| Main content | `bg-gray-950 p-6 overflow-y-auto` |
+| Card | `bg-gray-900 border border-gray-700 rounded-lg p-4` |
+| Table header | `text-left px-3 py-2 text-xs font-medium text-gray-400 uppercase tracking-wider` |
+| Table cell | `px-3 py-2 text-sm border-b border-gray-800` |
+| Button primary | `bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium` |
+| Button danger | `bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium` |
+| Button ghost | `bg-transparent border border-gray-600 text-gray-300 hover:text-white px-3 py-1.5 rounded-lg text-sm` |
+| Input | `bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm w-full text-white` |
+| Badge | `inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium` |
+| Success badge | `bg-green-900 text-green-300` |
+| Danger badge | `bg-red-900 text-red-300` |
 
-```css
-/* Layout */
-.dashboard-layout { display: grid; grid-template-columns: 260px 1fr; }
-.sidebar { background: #161b22; border-right: 1px solid #30363d; }
-.main { padding: 24px; }
+### Resolution tree styling
 
-/* Cards */
-.card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px; }
+The check tool's resolution tree uses a nested `<ul>` with Tailwind:
 
-/* Tables */
-table { width: 100%; border-collapse: collapse; }
-th { text-align: left; padding: 8px 12px; border-bottom: 2px solid #30363d; color: #8b949e; }
-td { padding: 8px 12px; border-bottom: 1px solid #21262d; }
-
-/* Forms */
-input, select, textarea {
-  background: #0d1117; border: 1px solid #30363d; border-radius: 6px;
-  padding: 8px 12px; color: #e6edf3; width: 100%;
-}
-
-/* Buttons */
-.btn { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; }
-.btn-primary { background: #238636; color: white; }
-.btn-primary:hover { background: #2ea043; }
-.btn-danger { background: #da3633; color: white; }
-.btn-ghost { background: transparent; color: #e6edf3; border: 1px solid #30363d; }
-
-/* Resolution tree */
-.resolution-tree { font-family: monospace; font-size: 14px; }
-.resolution-node { padding: 4px 0; }
-.resolution-node .allowed { color: #3fb950; }
-.resolution-node .denied { color: #f85149; }
-.resolution-children { padding-left: 24px; border-left: 1px solid #30363d; }
+```html
+<ul class="font-mono text-sm space-y-1">
+  <li class="pl-0 border-l-2 border-gray-700 pl-4">
+    <span class="text-green-400 font-medium">✅</span>
+    <span class="text-gray-400">viewer</span>
+    <span class="bg-gray-700 text-gray-300 px-2 py-0.5 rounded text-xs">union</span>
+    <ul class="mt-1 space-y-1">
+      <li class="border-l-2 border-gray-700 pl-4">
+        <span class="text-red-400">❌</span>
+        <span class="text-gray-500">viewer</span>
+        <span class="bg-gray-800 text-gray-400 px-2 py-0.5 rounded text-xs">this</span>
+      </li>
+    </ul>
+  </li>
+</ul>
 ```
 
-### Static files
+### Minimal JavaScript
 
-- `priv/static/assets/css/dashboard.css` — all dashboard styles
-- `priv/static/assets/js/dashboard.js` — minimal vanilla JS:
-  - Copy-to-clipboard
-  - Raw key reveal timeout
-  - Tab switching (CSS class toggle)
-  - Confirmation dialogs
+A single small JS file at `priv/static/assets/js/dashboard.js` for:
 
-No npm, no webpack, no build step. CSS and JS served directly by Phoenix.
+- Copy-to-clipboard (no library — uses `navigator.clipboard.writeText()`)
+- Tab switching (CSS class toggle via data attributes)
+- Raw key reveal timeout (hide after 30 seconds)
+- Confirmation dialogs (uses `confirm()`)
+
+Loaded via a `<script>` tag in the dashboard layout. No npm, no webpack,
+no build step.
 
 ---
 
