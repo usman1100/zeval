@@ -16,7 +16,6 @@ defmodule ZevalWeb.Router do
     plug :accepts, ["html"]
     plug :fetch_session
     plug :fetch_live_flash
-    plug :put_root_layout, {ZevalWeb.LayoutView, :root}
   end
 
   pipeline :dashboard_auth do

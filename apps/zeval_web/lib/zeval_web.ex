@@ -20,15 +20,14 @@ defmodule ZevalWeb do
   def view do
     quote do
       use Phoenix.View,
-        root: Application.app_dir(:zeval_web, "lib/zeval_web/templates"),
+        root: "lib/zeval_web/templates",
         namespace: ZevalWeb
     end
   end
 
   def live_view do
     quote do
-      use Phoenix.LiveView,
-        layout: {ZevalWeb.LayoutView, :root}
+      use Phoenix.LiveView
 
       unquote(view_helpers())
     end

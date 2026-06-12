@@ -10,6 +10,7 @@ config :zeval_web, ZevalWeb.Endpoint,
   url: [host: "localhost"],
   adapter: Bandit.PhoenixAdapter,
   pubsub_server: ZevalWeb.PubSub,
+  live_view: [signing_salt: "dev-signing-salt-zeval-dashboard"],
   render_errors: [
     formats: [json: ZevalWeb.ErrorJSON],
     layout: false

@@ -1,6 +1,10 @@
 defmodule ZevalWeb.LayoutView do
   @moduledoc """
-  View module for layouts.
+  Fallback layout view. LiveViews render their own full HTML.
   """
   use ZevalWeb, :view
+
+  def render("root.html", %{inner_content: inner}) do
+    inner
+  end
 end
