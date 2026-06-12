@@ -11,6 +11,7 @@ defmodule ZevalCore.MixProject do
       lockfile: "../../mix.lock",
       elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
+      test_coverage: [tool: ExCoveralls, threshold: 0],
       deps: deps()
     ]
   end

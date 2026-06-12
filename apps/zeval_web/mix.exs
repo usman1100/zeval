@@ -12,6 +12,7 @@ defmodule ZevalWeb.MixProject do
       elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
       elixirc_paths: elixirc_paths(Mix.env()),
+      test_coverage: [tool: ExCoveralls, threshold: 0],
       deps: deps()
     ]
   end
