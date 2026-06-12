@@ -75,6 +75,8 @@ if config_env() == :prod do
   config :zeval_core, ZevalCore.Repo,
     url: database_url,
     pool_size: pool_size,
+    queue_target: 5_000,
+    queue_interval: 10_000,
     socket_options: socket_options
 
   config :logger, :default_handler,

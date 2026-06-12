@@ -18,17 +18,16 @@ RUN mix do deps.get --only prod, deps.compile
 
 # Copy all source
 COPY apps/ apps/
-COPY priv/ priv/
 
 # Compile and build release
 RUN mix compile
 RUN mix release zeval_engine
 
 # Stage 2: Runtime
-FROM debian:bookworm-slim
+FROM debian:trixie-slim
 
 RUN apt-get update && apt-get install -y libstdc++6 openssl ca-certificates locales curl && rm -rf /var/lib/apt/lists/* && \
-    echo "C.UTF-8" > /etc/locale.gen && locale-gen
+    echo "C.UTF-8 UTF-8" > /etc/locale.gen && locale-gen
 
 # Run as an unprivileged user, not root.
 RUN groupadd -r app && useradd -r -g app -d /app app

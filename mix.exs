@@ -11,13 +11,14 @@ defmodule ZevalEngine.MixProject do
       test_coverage: [tool: ExCoveralls, threshold: 0],
       dialyzer: [plt_add_apps: [:ex_unit, :mix]],
       releases: [
-        zeval_engine: [
-          include_executables_for: [:unix],
-          applications: [
-            zeval_core: :permanent,
-            zeval_web: :permanent
-          ]
-        ]
+         zeval_engine: [
+           include_executables_for: [:unix],
+           validate_compile_env: false,
+           applications: [
+             zeval_core: :permanent,
+             zeval_web: :permanent
+           ]
+         ]
       ]
     ]
   end
