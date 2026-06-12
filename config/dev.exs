@@ -17,8 +17,5 @@ config :zeval_web, ZevalWeb.Endpoint,
 
 config :logger, :default_handler, level: :debug
 
-# Static token for the tenant-bootstrap endpoint in dev.
-config :zeval_web, :admin_bootstrap_token, "dev-bootstrap-token"
-
 # Static token for the /metrics endpoint in dev.
 config :zeval_web, :metrics_token, "dev-metrics-token"

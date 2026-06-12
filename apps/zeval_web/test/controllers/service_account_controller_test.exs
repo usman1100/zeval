@@ -82,21 +82,12 @@ defmodule ZevalWeb.ServiceAccountControllerTest do
     end
   end
 
-  describe "POST /api/v1/tenants (bootstrap)" do
-    test "requires the admin bootstrap token", %{conn: conn} do
+  describe "tenant creation is not exposed over the API" do
+    test "POST /api/v1/tenants has no route (dashboard-only creation)", %{conn: conn} do
+      # The public tenant-bootstrap endpoint was removed; tenants are created
+      # only from the dashboard so they always have an owner.
       conn = post(conn, "/api/v1/tenants", %{"name" => "nope"})
-      assert json_response(conn, 401)["code"] == "unauthorized"
-    end
-
-    test "succeeds with the configured admin token", %{conn: conn} do
-      token = Application.fetch_env!(:zeval_web, :admin_bootstrap_token)
-
-      conn =
-        conn
-        |> put_req_header("authorization", "Bearer #{token}")
-        |> post("/api/v1/tenants", %{"name" => "boot-#{System.unique_integer([:positive])}"})
-
-      assert json_response(conn, 201)["tenant"]["id"]
+      assert json_response(conn, 404)["code"] == "not_found"
     end
   end
 end

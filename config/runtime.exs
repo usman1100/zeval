@@ -67,10 +67,6 @@ if config_env() == :prod do
     secure: true,
     same_site: "Lax"
 
-  # Optional: protects the tenant-bootstrap endpoint. If unset, that route
-  # is disabled (AdminAuth fails closed).
-  config :zeval_web, :admin_bootstrap_token, System.get_env("ADMIN_BOOTSTRAP_TOKEN")
-
   # Optional: protects the /metrics endpoint. If unset, /metrics is disabled.
   config :zeval_web, :metrics_token, System.get_env("METRICS_TOKEN")
 

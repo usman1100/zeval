@@ -13,11 +13,6 @@ defmodule ZevalWeb.Router do
     plug(ZevalWeb.Plugs.LoggerMetadata)
   end
 
-  # Static admin-token gate for bootstrap endpoints (tenant creation).
-  pipeline :admin_auth do
-    plug(ZevalWeb.Plugs.AdminAuth)
-  end
-
   pipeline :browser do
     plug(:accepts, ["html"])
     plug(:fetch_session)
@@ -36,11 +31,6 @@ defmodule ZevalWeb.Router do
 
   pipeline :tuple_write_rate do
     plug(ZevalWeb.Plugs.RateLimit, max_requests: 500, bucket_name: "tuples")
-  end
-
-  # Per-IP limit for unauthenticated bootstrap routes.
-  pipeline :bootstrap_rate do
-    plug(ZevalWeb.Plugs.RateLimit, max_requests: 20, bucket_name: "bootstrap", key: :ip)
   end
 
   pipeline :metrics_auth do
@@ -99,13 +89,9 @@ defmodule ZevalWeb.Router do
     end
   end
 
-  # Tenant bootstrap — requires the admin bootstrap token (ADMIN_BOOTSTRAP_TOKEN),
-  # rate-limited per IP. Without the token configured the route is disabled.
-  scope "/api/v1", ZevalWeb do
-    pipe_through([:api, :admin_auth, :bootstrap_rate])
-
-    post("/tenants", TenantController, :create)
-  end
+  # Tenants are created only from the dashboard (which assigns the creator as
+  # owner via tenant_memberships) — there is no public tenant-creation API, so
+  # a tenant can never exist without an owner.
 
   scope "/api/v1", ZevalWeb do
     pipe_through([:auth])

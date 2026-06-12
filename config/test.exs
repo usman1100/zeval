@@ -15,8 +15,5 @@ config :zeval_web, ZevalWeb.Endpoint,
 
 config :logger, :default_handler, level: :warning
 
-# Static token for the tenant-bootstrap endpoint in tests.
-config :zeval_web, :admin_bootstrap_token, "test-bootstrap-token"
-
 # Run owned connections through the SQL sandbox in tests.
 config :zeval_web, sql_sandbox: true
