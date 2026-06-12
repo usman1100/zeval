@@ -56,6 +56,7 @@ defmodule ZevalWeb.Router do
     live "/tenants/:id", DashboardLive.TenantDetailLive, :show
     live "/api-keys", DashboardLive.ApiKeyLive, :index
     live "/namespaces", DashboardLive.NamespaceLive, :index
+    live "/namespaces/new", DashboardLive.NamespaceEditorLive, :new
     live "/namespaces/:id/edit", DashboardLive.NamespaceEditorLive, :edit
     live "/tuples", DashboardLive.TupleLive, :index
     live "/check", DashboardLive.CheckLive, :index
