@@ -165,25 +165,6 @@ defmodule ZevalWeb.Layouts do
     <div class="flex min-h-screen bg-background">
       <.sidebar current_user={@current_user} active={assigns[:active] || ""} />
       <main class="flex-1 flex flex-col min-w-0 bg-background">
-        <header class="w-full h-14 sticky top-0 z-40 border-b border-border-subtle bg-background flex items-center justify-between px-margin-page shrink-0">
-          <div class="flex items-center gap-stack-md flex-1">
-            <div class="relative w-64">
-              <span class="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-text-muted">search</span>
-              <input class="w-full bg-surface-container-lowest border border-border-subtle pl-9 pr-3 py-1 font-label-mono text-label-mono focus:border-white focus:ring-0 transition-colors" placeholder="Search resources..." type="text"/>
-            </div>
-          </div>
-          <div class="flex items-center gap-stack-md">
-            <button class="text-text-muted hover:text-text-secondary cursor-pointer transition-colors">
-              <span class="material-symbols-outlined">notifications</span>
-            </button>
-            <button class="text-text-muted hover:text-text-secondary cursor-pointer transition-colors">
-              <span class="material-symbols-outlined">help_outline</span>
-            </button>
-            <div class="w-8 h-8 rounded-full overflow-hidden border border-border-subtle cursor-pointer bg-surface-container-high flex items-center justify-center">
-              <span class="material-symbols-outlined text-text-muted">person</span>
-            </div>
-          </div>
-        </header>
         <div class="flex-1 overflow-y-auto custom-scrollbar">
           <div class="p-margin-page max-w-container-max mx-auto w-full">
             {@inner_content}
