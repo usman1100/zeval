@@ -143,7 +143,7 @@ defmodule ZevalCore.Namespace.RuleValidator do
         Map.put(acc, rel_name, targets)
       end)
 
-    visited = MapSet.new()
+    visited = %{}
 
     case dfs_cached(edges, visited, Enum.map(relations, &elem(&1, 0))) do
       {:cycle, cycle_path} ->
@@ -168,11 +168,10 @@ defmodule ZevalCore.Namespace.RuleValidator do
 
   defp computed_userset_targets(_), do: []
 
-  # Standard cycle detection: color-based DFS
   defp dfs_cached(_edges, _visited, []), do: :ok
 
   defp dfs_cached(edges, visited, [node | rest]) do
-    if MapSet.member?(visited, node) do
+    if Map.has_key?(visited, node) do
       dfs_cached(edges, visited, rest)
     else
       case dfs_visit(edges, visited, node, [node]) do
@@ -192,7 +191,7 @@ defmodule ZevalCore.Namespace.RuleValidator do
       if target in path do
         {:halt, {:cycle, Enum.reverse([target | path])}}
       else
-        if MapSet.member?(vis, target) do
+        if Map.has_key?(vis, target) do
           {:cont, {:ok, vis}}
         else
           case dfs_visit(edges, vis, target, [target | path]) do
@@ -204,7 +203,7 @@ defmodule ZevalCore.Namespace.RuleValidator do
     end)
     |> case do
       {:cycle, _} = cycle -> cycle
-      {:ok, new_visited} -> MapSet.put(new_visited, node)
+      {:ok, new_visited} -> Map.put(new_visited, node, true)
     end
   end
 end

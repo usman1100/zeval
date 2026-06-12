@@ -12,6 +12,7 @@ defmodule ZevalCore.Namespace.NamespaceConfig do
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
+  @type t :: %__MODULE__{}
 
   schema "namespace_configs" do
     field(:name, :string)

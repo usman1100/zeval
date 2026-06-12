@@ -6,6 +6,7 @@ defmodule ZevalCore.Tenant do
   import Ecto.Changeset
 
   @primary_key {:id, :binary_id, autogenerate: true}
+  @type t :: %__MODULE__{}
   schema "tenants" do
     field(:name, :string)
     timestamps(type: :utc_datetime_usec, inserted_at: :inserted_at, updated_at: false)

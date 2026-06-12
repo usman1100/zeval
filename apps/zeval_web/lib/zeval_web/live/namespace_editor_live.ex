@@ -526,9 +526,6 @@ defmodule ZevalWeb.DashboardLive.NamespaceEditorLive do
 
       {:error, reason} when is_binary(reason) ->
         {:noreply, assign(socket, error: reason)}
-
-      {:error, _} ->
-        {:noreply, assign(socket, error: "Could not save namespace")}
     end
   end
 

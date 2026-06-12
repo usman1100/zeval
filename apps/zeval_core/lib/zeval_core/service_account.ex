@@ -10,6 +10,7 @@ defmodule ZevalCore.ServiceAccount do
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
+  @type t :: %__MODULE__{}
 
   schema "service_accounts" do
     field(:tenant_id, :binary_id)

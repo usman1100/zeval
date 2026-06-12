@@ -15,7 +15,8 @@ defmodule ZevalCore.Namespace do
   Validates and writes a namespace config. Upserts by (tenant_id, name).
   Returns `{:ok, config}` or `{:error, changeset}`.
   """
-  @spec write(binary(), map()) :: {:ok, NamespaceConfig.t()} | {:error, Ecto.Changeset.t()}
+  @spec write(binary(), map()) ::
+          {:ok, NamespaceConfig.t()} | {:error, Ecto.Changeset.t()} | {:error, String.t()}
   def write(tenant_id, params) when is_map(params) do
     with {:ok, validated} <- RuleValidator.validate_config(params),
          config_name = validated["name"],
