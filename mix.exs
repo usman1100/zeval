@@ -33,6 +33,9 @@ defmodule ZevalEngine.MixProject do
       {:ecto_sql, "~> 3.11"},
       {:postgrex, "~> 0.18"},
 
+      # Password hashing for dashboard users
+      {:bcrypt_elixir, "~> 3.2"},
+
       # Observability
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_metrics_prometheus, "~> 1.1"},

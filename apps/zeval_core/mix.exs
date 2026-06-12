@@ -27,6 +27,9 @@ defmodule ZevalCore.MixProject do
       # Database
       {:ecto_sql, "~> 3.11"},
       {:postgrex, "~> 0.18"},
+
+      # Password hashing for dashboard users
+      {:bcrypt_elixir, "~> 3.2"},
       {:jason, "~> 1.4"},
 
       # Observability
