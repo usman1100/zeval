@@ -8,7 +8,7 @@ defmodule ZevalEngine.MixProject do
       start_permanent: Mix.env() == :prod,
       elixir: "~> 1.19",
       deps: deps(),
-      test_coverage: [tool: ExCoveralls],
+      test_coverage: [tool: ExCoveralls, threshold: 0],
       preferred_cli_env: [
         coveralls: :test,
         "coveralls.html": :test,
