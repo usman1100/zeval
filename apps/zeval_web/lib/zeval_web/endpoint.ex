@@ -1,7 +1,13 @@
 defmodule ZevalWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :zeval_web
 
-  # No sockets — this is a JSON-only API
+  socket "/live", Phoenix.LiveView.Socket
+
+  # Serve static assets (phoenix_live_view.js, etc.)
+  plug Plug.Static,
+    at: "/",
+    from: :zeval_web,
+    only: ~w(assets fonts images favicon.ico robots.txt)
 
   # Session for dashboard authentication
   plug Plug.Session,

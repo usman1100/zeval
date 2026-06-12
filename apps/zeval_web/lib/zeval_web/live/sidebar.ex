@@ -6,6 +6,39 @@ defmodule ZevalWeb.DashboardLive.Sidebar do
 
   attr :current_user, :map, default: nil
   attr :active, :string, default: ""
+  attr :page_title, :string, default: "Zeval Engine"
+  slot :inner_block, required: true
+
+  def dashboard_layout(assigns) do
+    ~H"""
+    <!DOCTYPE html>
+    <html lang="en" class="bg-gray-950">
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <title><%= @page_title %></title>
+      <script src="https://cdn.tailwindcss.com"></script>
+      <script type="text/javascript" src="/assets/phoenix.js"></script>
+    <script type="text/javascript" src="/assets/phoenix_live_view.js"></script>
+    <script>
+      let liveSocket = new window.LiveView.LiveSocket("/live", window.Phoenix.Socket, {})
+      liveSocket.connect()
+    </script>
+    </head>
+    <body class="bg-gray-950 text-gray-100 antialiased">
+      <div class="flex min-h-screen bg-gray-950">
+        <.sidebar current_user={@current_user} active={@active} />
+        <main class="flex-1 p-8 overflow-y-auto">
+          <%= render_slot(@inner_block) %>
+        </main>
+      </div>
+    </body>
+    </html>
+    """
+  end
+
+  attr :current_user, :map, default: nil
+  attr :active, :string, default: ""
 
   def sidebar(assigns) do
     ~H"""
