@@ -89,6 +89,10 @@ defmodule ZevalWeb.DashboardLive.TenantLive do
     """
   end
 
+  def handle_event("update_name", %{"value" => name}, socket) do
+    {:noreply, assign(socket, new_name: name)}
+  end
+
   def handle_event("show_create", _, socket) do
     {:noreply, assign(socket, show_create: true, error: nil)}
   end
