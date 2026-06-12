@@ -14,4 +14,16 @@ defmodule ZevalCore.Tenants do
 
   @doc "Gets a tenant by ID."
   def get(id), do: Repo.get(Tenant, id)
+
+  @doc "Lists all tenants ordered by name."
+  def list, do: Repo.all(from t in Tenant, order_by: t.name)
+
+  @doc "Deletes a tenant by struct or ID."
+  def delete(%Tenant{} = tenant), do: Repo.delete(tenant)
+  def delete(id) do
+    case get(id) do
+      nil -> {:error, :not_found}
+      tenant -> Repo.delete(tenant)
+    end
+  end
 end
