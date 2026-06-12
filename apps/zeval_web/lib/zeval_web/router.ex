@@ -34,6 +34,7 @@ defmodule ZevalWeb.Router do
   # Prometheus metrics — no auth
   scope "/", ZevalWeb do
     get "/metrics", MetricsController, :index
+    get "/", PageController, :index
   end
 
   # Dashboard — public routes
