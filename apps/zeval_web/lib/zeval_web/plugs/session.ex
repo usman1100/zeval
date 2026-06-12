@@ -10,16 +10,18 @@ defmodule ZevalWeb.Plugs.Session do
 
   @behaviour Plug
 
+  @doc """
+  The raw session options keyword list. Used both by this plug and by the
+  LiveView socket's `connect_info: [session: {__MODULE__, :options, []}]` so
+  the websocket can read the same session the HTTP request wrote.
+  """
+  def options, do: Application.fetch_env!(:zeval_web, :session_options)
+
   @impl true
   def init(_opts), do: nil
 
   @impl true
   def call(conn, _opts) do
-    opts =
-      :zeval_web
-      |> Application.fetch_env!(:session_options)
-      |> Plug.Session.init()
-
-    Plug.Session.call(conn, opts)
+    Plug.Session.call(conn, Plug.Session.init(options()))
   end
 end

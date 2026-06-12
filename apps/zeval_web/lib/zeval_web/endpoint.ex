@@ -1,7 +1,13 @@
 defmodule ZevalWeb.Endpoint do
   use Phoenix.Endpoint, otp_app: :zeval_web
 
-  socket("/live", Phoenix.LiveView.Socket)
+  # The LiveView socket must read the same session the HTTP request wrote, or the
+  # connect fails with reason "stale" and the client reloads forever. Session
+  # options are resolved at runtime via the MFA so they match
+  # ZevalWeb.Plugs.Session (env-sourced salts in prod).
+  socket("/live", Phoenix.LiveView.Socket,
+    websocket: [connect_info: [session: {ZevalWeb.Plugs.Session, :options, []}]]
+  )
 
   # Serve static assets (phoenix_live_view.js, etc.)
   plug(Plug.Static,
