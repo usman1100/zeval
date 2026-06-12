@@ -27,7 +27,7 @@ defmodule ZevalWeb.DashboardLive.Sidebar do
 
       <div class="border-t border-gray-800 pt-4 mt-4">
         <div class="text-sm text-gray-400">
-          <%= if @current_user, do: @current_user.email %>
+          <%= if @current_user, do: @current_user[:email] || "User" %>
         </div>
         <a href="/dashboard/logout" class="text-xs text-gray-500 hover:text-gray-300">Sign out</a>
       </div>

@@ -13,7 +13,7 @@ defmodule ZevalWeb.DashboardLive.TenantDetailLive do
     )
 
     {:ok, assign(socket,
-      current_user: session["current_user"],
+      current_user: %{email: session["current_user_email"], name: session["current_user_name"]},
       tenant: tenant,
       accounts: accounts,
       namespaces: namespaces

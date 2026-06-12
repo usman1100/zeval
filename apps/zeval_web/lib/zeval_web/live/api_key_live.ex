@@ -1,13 +1,12 @@
 defmodule ZevalWeb.DashboardLive.ApiKeyLive do
   use ZevalWeb, :live_view
   import ZevalWeb.DashboardLive.Sidebar, only: [sidebar: 1]
-  import Ecto.Query
 
   alias ZevalCore.{ServiceAccounts, Tenants, Repo}
 
   def mount(_params, session, socket) do
     {:ok, assign(socket,
-      current_user: session["current_user"],
+      current_user: %{email: session["current_user_email"], name: session["current_user_name"]},
       accounts: all_accounts(),
       tenants: Tenants.list(),
       show_create: false,
@@ -187,6 +186,7 @@ defmodule ZevalWeb.DashboardLive.ApiKeyLive do
   end
 
   defp all_accounts do
-    Repo.all(from a in ZevalCore.ServiceAccount, order_by: [desc: a.inserted_at])
+    Repo.all(ZevalCore.ServiceAccount)
+    |> Enum.sort_by(& &1.inserted_at, :desc)
   end
 end

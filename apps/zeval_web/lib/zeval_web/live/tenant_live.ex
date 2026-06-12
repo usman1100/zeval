@@ -6,7 +6,7 @@ defmodule ZevalWeb.DashboardLive.TenantLive do
 
   def mount(_params, session, socket) do
     {:ok, assign(socket,
-      current_user: session["current_user"],
+      current_user: %{email: session["current_user_email"], name: session["current_user_name"]},
       tenants: Tenants.list(),
       show_create: false,
       new_name: "",

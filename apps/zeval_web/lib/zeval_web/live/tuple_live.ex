@@ -3,7 +3,7 @@ defmodule ZevalWeb.DashboardLive.TupleLive do
   import ZevalWeb.DashboardLive.Sidebar, only: [sidebar: 1]
 
   def mount(_params, session, socket) do
-    {:ok, assign(socket, current_user: session["current_user"], active: "tuples")}
+    {:ok, assign(socket, current_user: %{email: session["current_user_email"], name: session["current_user_name"]}, active: "tuples")}
   end
 
   def render(assigns) do
