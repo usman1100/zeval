@@ -1,13 +1,29 @@
 import Config
 
-config :zeval_core, ZevalCore.Repo,
-  username: "zeval",
-  password: "zeval",
-  hostname: "localhost",
-  database: "zeval_test",
-  port: 5432,
-  pool: Ecto.Adapters.SQL.Sandbox,
-  pool_size: 10
+database_url = System.get_env("DATABASE_URL")
+
+repo_config =
+  if is_binary(database_url) and database_url != "" do
+    url_with_test_db = String.replace(database_url, ~r"/[^/]+$", "/zeval_test")
+
+    [
+      url: url_with_test_db,
+      pool: Ecto.Adapters.SQL.Sandbox,
+      pool_size: String.to_integer(System.get_env("POOL_SIZE", "10"))
+    ]
+  else
+    [
+      username: System.get_env("PGUSER"),
+      password: System.get_env("PGPASSWORD"),
+      hostname: System.get_env("PGHOST"),
+      database: "zeval_test",
+      port: String.to_integer(System.get_env("PGPORT", "5432")),
+      pool: Ecto.Adapters.SQL.Sandbox,
+      pool_size: String.to_integer(System.get_env("POOL_SIZE", "10"))
+    ]
+  end
+
+config :zeval_core, ZevalCore.Repo, repo_config
 
 config :zeval_web, ZevalWeb.Endpoint,
   http: [port: 4001],
