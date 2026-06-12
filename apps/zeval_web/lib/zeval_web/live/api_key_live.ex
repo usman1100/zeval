@@ -23,137 +23,155 @@ defmodule ZevalWeb.DashboardLive.ApiKeyLive do
 
   def render(assigns) do
     ~H"""
-    <div class="flex items-center justify-between mb-6">
-      <h2 class="text-2xl font-bold text-white">API Keys</h2>
-      <button
-        phx-click="show_create"
-        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
-      >
-        + New Key
-      </button>
-    </div>
+    <div class="flex flex-col gap-stack-lg">
+      <div class="flex items-end justify-between">
+        <div>
+          <nav class="flex items-center gap-2 font-label-mono text-label-mono mb-stack-xs">
+            <span class="text-text-muted">Zeval Engine</span>
+            <span class="text-text-muted">/</span>
+            <span class="text-text-primary">API Keys</span>
+          </nav>
+          <h2 class="font-headline-lg text-headline-lg text-text-primary">API Keys</h2>
+          <p class="text-text-secondary font-body-md text-body-md mt-1">Manage service account keys for tenant access.</p>
+        </div>
+        <button
+          phx-click="show_create"
+          class="bg-emerald-success text-background px-stack-md py-2 font-label-mono text-label-mono font-bold flex items-center gap-2 hover:opacity-90 transition-opacity"
+        >
+          <span class="material-symbols-outlined">add</span>
+          New Key
+        </button>
+      </div>
 
-    <%= if @show_create do %>
-      <div class="bg-gray-900 border border-gray-700 rounded-xl p-6 mb-6">
-        <h3 class="text-lg font-semibold text-white mb-4">Create API Key</h3>
-        <%= if @error do %>
-          <div class="bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-lg mb-4 text-sm">{@error}</div>
-        <% end %>
-        <form phx-submit="create">
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-300 mb-1">Tenant</label>
-            <select
-              name="tenant_id"
-              phx-change="select_tenant"
-              class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white"
-            >
-              <option value="">Select a tenant</option>
-              <%= for t <- @tenants do %>
-                <option value={t.id} selected={@new_tenant_id == t.id}>{t.name}</option>
-              <% end %>
-            </select>
-          </div>
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-300 mb-1">Key Name</label>
-            <input
-              type="text"
-              name="name"
-              phx-keyup="update_name"
-              phx-debounce="200"
-              class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white"
-              placeholder="production-key"
-            />
-          </div>
-          <div class="flex gap-3">
-            <button
-              type="submit"
-              phx-disable-with="Generating..."
-              class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
-            >
-              Generate Key
-            </button>
-            <button
-              type="button"
-              phx-click="hide_create"
-              class="bg-gray-700 hover:bg-gray-600 text-gray-300 px-4 py-2 rounded-lg text-sm"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-
-        <%= if @created_key do %>
-          <div class="mt-6 border-t border-gray-700 pt-4">
-            <div class="bg-yellow-900/30 border border-yellow-700 rounded-lg p-4">
-              <p class="text-yellow-300 text-sm font-medium mb-2">⚠️ Save this key — it will not be shown again</p>
-              <code class="block bg-gray-950 border border-gray-600 rounded-lg px-3 py-2 text-sm font-mono text-green-300 break-all select-all">{@created_key}</code>
+      <%= if @show_create do %>
+        <div class="bg-surface border border-border-subtle p-stack-md">
+          <h3 class="font-headline-md text-headline-md text-text-primary mb-stack-md">Create API Key</h3>
+          <%= if @error do %>
+            <div class="bg-ruby-error/10 border border-ruby-error/30 text-ruby-error px-stack-md py-stack-sm font-label-mono text-label-mono mb-stack-md">{@error}</div>
+          <% end %>
+          <form phx-submit="create">
+            <div class="mb-stack-md">
+              <label class="block font-label-mono text-label-mono text-text-muted mb-stack-xs">Tenant</label>
+              <div class="relative">
+                <select
+                  name="tenant_id"
+                  phx-change="select_tenant"
+                  class="w-full bg-surface-container-lowest border border-border-subtle text-text-primary font-label-mono text-label-mono py-2 px-3 focus:border-white transition-all outline-none appearance-none"
+                >
+                  <option value="">Select a tenant</option>
+                  <%= for t <- @tenants do %>
+                    <option value={t.id} selected={@new_tenant_id == t.id}>{t.name}</option>
+                  <% end %>
+                </select>
+                <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none">expand_more</span>
+              </div>
+            </div>
+            <div class="mb-stack-md">
+              <label class="block font-label-mono text-label-mono text-text-muted mb-stack-xs">Key Name</label>
+              <input
+                type="text"
+                name="name"
+                phx-keyup="update_name"
+                phx-debounce="200"
+                class="w-full bg-surface-container-lowest border border-border-subtle font-label-mono text-label-mono text-text-primary px-3 py-2 focus:border-white focus:ring-0 transition-colors"
+                placeholder="production-key"
+              />
+            </div>
+            <div class="flex gap-3">
               <button
-                phx-click="dismiss_key"
-                class="mt-3 bg-gray-700 hover:bg-gray-600 text-white px-3 py-1.5 rounded-lg text-sm"
+                type="submit"
+                phx-disable-with="Generating..."
+                class="bg-emerald-success text-background px-stack-md py-2 font-label-mono text-label-mono font-bold"
               >
-                I've saved it
+                Generate Key
+              </button>
+              <button
+                type="button"
+                phx-click="hide_create"
+                class="border border-border-subtle text-text-secondary px-stack-md py-2 font-label-mono text-label-mono hover:text-text-primary transition-colors"
+              >
+                Cancel
               </button>
             </div>
-          </div>
-        <% end %>
-      </div>
-    <% end %>
+          </form>
 
-    <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-      <table class="w-full">
-        <thead>
-          <tr class="border-b border-gray-800">
-            <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Name</th>
-            <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Prefix</th>
-            <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
-            <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Last Used</th>
-            <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Created</th>
-            <th class="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <%= for acct <- @accounts do %>
-            <tr class="border-b border-gray-800 hover:bg-gray-800/50">
-              <td class="px-4 py-3 text-sm text-white font-medium">{acct.name}</td>
-              <td class="px-4 py-3 text-sm text-gray-400 font-mono">{acct.key_prefix}</td>
-              <td class="px-4 py-3">
-                <%= if acct.revoked_at do %>
-                  <span class="bg-red-900 text-red-300 px-2 py-0.5 rounded-full text-xs">Revoked</span>
-                <% else %>
-                  <span class="bg-green-900 text-green-300 px-2 py-0.5 rounded-full text-xs">Active</span>
-                <% end %>
-              </td>
-              <td class="px-4 py-3 text-sm text-gray-400">
-                <%= if acct.last_used_at do %>
-                  {Calendar.strftime(acct.last_used_at, "%Y-%m-%d")}
-                <% else %>
-                  Never
-                <% end %>
-              </td>
-              <td class="px-4 py-3 text-sm text-gray-400">
-                <%= if acct.inserted_at do %>
-                  {Calendar.strftime(acct.inserted_at, "%Y-%m-%d")}
-                <% end %>
-              </td>
-              <td class="px-4 py-3 text-right">
-                <%= unless acct.revoked_at do %>
-                  <button
-                    phx-click="revoke"
-                    phx-value-id={acct.id}
-                    phx-confirm="Revoke this key? Existing integrations using it will stop working."
-                    class="text-red-400 hover:text-red-300 text-sm"
-                  >
-                    Revoke
-                  </button>
-                <% end %>
-              </td>
-            </tr>
+          <%= if @created_key do %>
+            <div class="mt-stack-md border-t border-border-subtle pt-stack-md">
+              <div class="bg-surface-container-low border border-border-subtle p-stack-md">
+                <p class="font-label-mono text-label-mono text-emerald-success mb-stack-sm">Save this key — it will not be shown again</p>
+                <code class="block bg-background border border-border-subtle px-3 py-2 font-code-block text-code-block text-emerald-success break-all select-all">{@created_key}</code>
+                <button
+                  phx-click="dismiss_key"
+                  class="mt-stack-sm border border-border-subtle text-text-secondary px-3 py-1.5 font-label-mono text-label-mono hover:text-text-primary transition-colors"
+                >
+                  I've saved it
+                </button>
+              </div>
+            </div>
           <% end %>
-          <%= if @accounts == [] do %>
-            <tr><td colspan="6" class="px-4 py-8 text-center text-gray-500">No API keys yet.</td></tr>
-          <% end %>
-        </tbody>
-      </table>
+        </div>
+      <% end %>
+
+      <div class="bg-surface border border-border-subtle overflow-hidden">
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-surface-container-low border-b border-border-subtle">
+                <th class="px-stack-md py-stack-sm font-label-mono text-label-mono text-text-muted uppercase">Name</th>
+                <th class="px-stack-md py-stack-sm font-label-mono text-label-mono text-text-muted uppercase">Prefix</th>
+                <th class="px-stack-md py-stack-sm font-label-mono text-label-mono text-text-muted uppercase">Status</th>
+                <th class="px-stack-md py-stack-sm font-label-mono text-label-mono text-text-muted uppercase">Last Used</th>
+                <th class="px-stack-md py-stack-sm font-label-mono text-label-mono text-text-muted uppercase">Created</th>
+                <th class="px-stack-md py-stack-sm font-label-mono text-label-mono text-text-muted uppercase text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border-subtle">
+              <%= for acct <- @accounts do %>
+                <tr class="hover:bg-surface-container-high transition-colors group">
+                  <td class="px-stack-md py-stack-sm font-body-md text-body-md text-text-primary">{acct.name}</td>
+                  <td class="px-stack-md py-stack-sm font-code-block text-code-block text-text-secondary">{acct.key_prefix}</td>
+                  <td class="px-stack-md py-stack-sm">
+                    <%= if acct.revoked_at do %>
+                      <span class="inline-flex items-center px-2 py-0.5 bg-ruby-error/10 text-ruby-error font-label-mono text-[11px]">Revoked</span>
+                    <% else %>
+                      <span class="inline-flex items-center px-2 py-0.5 bg-emerald-success/10 text-emerald-success font-label-mono text-[11px]">Active</span>
+                    <% end %>
+                  </td>
+                  <td class="px-stack-md py-stack-sm font-label-mono text-label-mono text-text-secondary">
+                    <%= if acct.last_used_at do %>
+                      {Calendar.strftime(acct.last_used_at, "%Y-%m-%d")}
+                    <% else %>
+                      Never
+                    <% end %>
+                  </td>
+                  <td class="px-stack-md py-stack-sm font-label-mono text-label-mono text-text-secondary">
+                    <%= if acct.inserted_at do %>
+                      {Calendar.strftime(acct.inserted_at, "%Y-%m-%d")}
+                    <% end %>
+                  </td>
+                  <td class="px-stack-md py-stack-sm text-right">
+                    <%= unless acct.revoked_at do %>
+                      <button
+                        phx-click="revoke"
+                        phx-value-id={acct.id}
+                        phx-confirm="Revoke this key? Existing integrations using it will stop working."
+                        class="font-label-mono text-label-mono text-ruby-error hover:text-ruby-error/80 transition-colors"
+                      >
+                        Revoke
+                      </button>
+                    <% end %>
+                  </td>
+                </tr>
+              <% end %>
+              <%= if @accounts == [] do %>
+                <tr>
+                  <td colspan="6" class="px-stack-md py-stack-lg text-center font-body-md text-body-md text-text-muted">No API keys yet.</td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
     """
   end

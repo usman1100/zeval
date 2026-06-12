@@ -9,11 +9,6 @@ defmodule ZevalEngine.MixProject do
       elixir: "~> 1.19",
       deps: deps(),
       test_coverage: [tool: ExCoveralls, threshold: 0],
-      preferred_cli_env: [
-        coveralls: :test,
-        "coveralls.html": :test,
-        "coveralls.json": :test
-      ],
       dialyzer: [plt_add_apps: [:ex_unit, :mix]],
       releases: [
         zeval_engine: [
@@ -23,6 +18,16 @@ defmodule ZevalEngine.MixProject do
             zeval_web: :permanent
           ]
         ]
+      ]
+    ]
+  end
+
+  def cli do
+    [
+      preferred_envs: [
+        coveralls: :test,
+        "coveralls.html": :test,
+        "coveralls.json": :test
       ]
     ]
   end

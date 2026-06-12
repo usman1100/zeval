@@ -19,82 +19,116 @@ defmodule ZevalWeb.DashboardLive.NamespaceLive do
 
   def render(assigns) do
     ~H"""
-    <div class="flex items-center justify-between mb-6">
-      <h2 class="text-2xl font-bold text-white">Namespaces</h2>
-      <a
-        href="/dashboard/namespaces/new"
-        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
-      >
-        + New Namespace
-      </a>
-    </div>
+    <div class="flex flex-col gap-stack-lg">
+      <div class="flex items-end justify-between">
+        <div>
+          <nav class="flex items-center gap-2 font-label-mono text-label-mono mb-stack-xs">
+            <span class="text-text-muted">Zeval Engine</span>
+            <span class="text-text-muted">/</span>
+            <span class="text-text-primary">Namespaces</span>
+          </nav>
+          <h2 class="font-headline-lg text-headline-lg text-text-primary">Namespaces</h2>
+          <p class="text-text-secondary font-body-md text-body-md mt-1">Configure access control namespaces and their relation rules.</p>
+        </div>
+        <a
+          href="/dashboard/namespaces/new"
+          class="bg-emerald-success text-background px-stack-md py-2 font-label-mono text-label-mono font-bold flex items-center gap-2 hover:opacity-90 transition-opacity"
+        >
+          <span class="material-symbols-outlined">add</span>
+          New Namespace
+        </a>
+      </div>
 
-    <div class="mb-4">
-      <select
-        phx-change="filter_tenant"
-        class="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white"
-      >
-        <option value="">All tenants</option>
-        <%= for t <- @tenants do %>
-          <option value={t.id} selected={@filter_tenant_id == t.id}>{t.name}</option>
-        <% end %>
-      </select>
-    </div>
-
-    <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-      <table class="w-full">
-        <thead>
-          <tr class="border-b border-gray-800">
-            <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Name</th>
-            <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Tenant</th>
-            <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Version</th>
-            <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Created</th>
-            <th class="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <%= for ns <- @namespaces do %>
-            <tr class="border-b border-gray-800 hover:bg-gray-800/50">
-              <td class="px-4 py-3 text-sm text-white font-medium">{ns.name}</td>
-              <td class="px-4 py-3 text-sm text-gray-400">{ns.tenant_name}</td>
-              <td class="px-4 py-3 text-sm text-gray-400">v{ns.version}</td>
-              <td class="px-4 py-3 text-sm text-gray-400">
-                <%= if ns.inserted_at do %>
-                  {Calendar.strftime(ns.inserted_at, "%Y-%m-%d")}
-                <% end %>
-              </td>
-              <td class="px-4 py-3 text-right space-x-3">
-                <button phx-click="view_config" phx-value-id={ns.id} class="text-blue-400 hover:text-blue-300 text-sm">View</button>
-                <a href={"/dashboard/namespaces/#{ns.id}/edit"} class="text-gray-400 hover:text-white text-sm">Edit</a>
-                <button
-                  phx-click="delete"
-                  phx-value-id={ns.id}
-                  phx-confirm={"Delete namespace '#{ns.name}' and all its config?"}
-                  class="text-red-400 hover:text-red-300 text-sm"
-                >
-                  Delete
-                </button>
-              </td>
-            </tr>
-          <% end %>
-          <%= if @namespaces == [] do %>
-            <tr><td colspan="5" class="px-4 py-8 text-center text-gray-500">No namespaces yet.</td></tr>
-          <% end %>
-        </tbody>
-      </table>
-    </div>
-
-    <%= if @selected_namespace do %>
-      <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" phx-click="close_viewer">
-        <div class="bg-gray-900 border border-gray-700 rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto" phx-click-away="close_viewer">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-semibold text-white">{@selected_namespace.name}</h3>
-            <button phx-click="close_viewer" class="text-gray-400 hover:text-white text-xl">&times;</button>
-          </div>
-          <pre class="bg-gray-950 border border-gray-700 rounded-lg p-4 text-sm font-mono text-green-300 overflow-x-auto">{Jason.encode!(@selected_namespace.config, pretty: true)}</pre>
+      <div>
+        <div class="relative w-64">
+          <select
+            phx-change="filter_tenant"
+            class="w-full bg-surface-container-lowest border border-border-subtle text-text-primary font-label-mono text-label-mono py-2 px-3 focus:border-white transition-all outline-none appearance-none"
+          >
+            <option value="">All tenants</option>
+            <%= for t <- @tenants do %>
+              <option value={t.id} selected={@filter_tenant_id == t.id}>{t.name}</option>
+            <% end %>
+          </select>
+          <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none">expand_more</span>
         </div>
       </div>
-    <% end %>
+
+      <div class="bg-surface border border-border-subtle overflow-hidden">
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-surface-container-low border-b border-border-subtle">
+                <th class="px-stack-md py-stack-sm font-label-mono text-label-mono text-text-muted uppercase">Name</th>
+                <th class="px-stack-md py-stack-sm font-label-mono text-label-mono text-text-muted uppercase">Tenant</th>
+                <th class="px-stack-md py-stack-sm font-label-mono text-label-mono text-text-muted uppercase">Version</th>
+                <th class="px-stack-md py-stack-sm font-label-mono text-label-mono text-text-muted uppercase">Created</th>
+                <th class="px-stack-md py-stack-sm font-label-mono text-label-mono text-text-muted uppercase text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border-subtle">
+              <%= for ns <- @namespaces do %>
+                <tr class="hover:bg-surface-container-high transition-colors group">
+                  <td class="px-stack-md py-stack-sm">
+                    <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 flex items-center justify-center bg-surface-container-highest border border-border-subtle font-label-mono text-primary text-sm uppercase">
+                        {String.slice(ns.name, 0, 2)}
+                      </div>
+                      <span class="font-body-md text-body-md text-text-primary">{ns.name}</span>
+                    </div>
+                  </td>
+                  <td class="px-stack-md py-stack-sm font-body-md text-body-md text-text-secondary">{ns.tenant_name}</td>
+                  <td class="px-stack-md py-stack-sm font-label-mono text-label-mono text-text-muted">v{ns.version}</td>
+                  <td class="px-stack-md py-stack-sm font-label-mono text-label-mono text-text-secondary">
+                    <%= if ns.inserted_at do %>
+                      {Calendar.strftime(ns.inserted_at, "%Y-%m-%d")}
+                    <% end %>
+                  </td>
+                  <td class="px-stack-md py-stack-sm text-right">
+                    <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button phx-click="view_config" phx-value-id={ns.id} class="p-1 text-text-muted hover:text-text-primary transition-colors" title="View Config">
+                        <span class="material-symbols-outlined">code</span>
+                      </button>
+                      <a href={"/dashboard/namespaces/#{ns.id}/edit"} class="p-1 text-text-muted hover:text-text-primary transition-colors" title="Edit">
+                        <span class="material-symbols-outlined">edit</span>
+                      </a>
+                      <button
+                        phx-click="delete"
+                        phx-value-id={ns.id}
+                        phx-confirm={"Delete namespace '#{ns.name}' and all its config?"}
+                        class="p-1 text-text-muted hover:text-ruby-error transition-colors"
+                        title="Delete"
+                      >
+                        <span class="material-symbols-outlined">delete</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              <% end %>
+              <%= if @namespaces == [] do %>
+                <tr>
+                  <td colspan="5" class="px-stack-md py-stack-lg text-center font-body-md text-body-md text-text-muted">No namespaces yet.</td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <%= if @selected_namespace do %>
+        <div class="fixed inset-0 bg-black/60 flex items-center justify-center z-50" phx-click="close_viewer">
+          <div class="bg-surface border border-border-subtle p-stack-md max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto custom-scrollbar" phx-click-away="close_viewer">
+            <div class="flex items-center justify-between mb-stack-md">
+              <h3 class="font-headline-md text-headline-md text-text-primary">{@selected_namespace.name}</h3>
+              <button phx-click="close_viewer" class="text-text-muted hover:text-text-primary transition-colors">
+                <span class="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <pre class="bg-background border border-border-subtle p-stack-md font-code-block text-code-block text-emerald-success overflow-x-auto">{Jason.encode!(@selected_namespace.config, pretty: true)}</pre>
+          </div>
+        </div>
+      <% end %>
+    </div>
     """
   end
 

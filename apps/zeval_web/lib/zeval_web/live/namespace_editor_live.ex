@@ -53,44 +53,59 @@ defmodule ZevalWeb.DashboardLive.NamespaceEditorLive do
 
   def render(assigns) do
     ~H"""
-    <div class="flex items-center justify-between mb-6">
-      <h2 class="text-2xl font-bold text-white">
-        <%= if @namespace_name == "", do: "New Namespace", else: "Edit: #{@namespace_name}" %>
-      </h2>
-      <div class="flex gap-2">
-        <button
-          phx-click="switch_mode"
-          class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
-        >
-          <%= if @mode == :visual, do: "Switch to JSON", else: "Switch to Visual" %>
-        </button>
+    <div class="flex flex-col gap-stack-lg">
+      <div class="flex items-end justify-between">
+        <div>
+          <nav class="flex items-center gap-2 font-label-mono text-label-mono mb-stack-xs">
+            <a href="/dashboard/namespaces" class="text-text-muted hover:text-text-primary transition-colors">Namespaces</a>
+            <span class="text-text-muted">/</span>
+            <span class="text-text-primary"><%= if @namespace_name == "", do: "New Namespace", else: @namespace_name %></span>
+          </nav>
+          <h2 class="font-headline-lg text-headline-lg text-text-primary">
+            <%= if @namespace_name == "", do: "New Namespace", else: "Edit: #{@namespace_name}" %>
+          </h2>
+          <p class="text-text-secondary font-body-md text-body-md mt-1">Configure access control logic and relation rules.</p>
+        </div>
+        <div class="flex items-center gap-stack-sm">
+          <div class="flex bg-surface-container-low p-0.5 border border-border-subtle">
+            <button phx-click="switch_mode"
+              class={"px-stack-md py-1.5 font-label-mono text-label-mono transition-all " <> if @mode == :visual, do: "bg-secondary-container text-on-secondary-container", else: "text-text-muted hover:text-text-primary"}>
+              VISUAL
+            </button>
+            <button phx-click="switch_mode"
+              class={"px-stack-md py-1.5 font-label-mono text-label-mono transition-all " <> if @mode == :json, do: "bg-secondary-container text-on-secondary-container", else: "text-text-muted hover:text-text-primary"}>
+              RAW JSON
+            </button>
+          </div>
+        </div>
       </div>
+
+      <%= if @error do %>
+        <div class="bg-ruby-error/10 border border-ruby-error/30 text-ruby-error px-stack-md py-stack-sm font-label-mono text-label-mono">{@error}</div>
+      <% end %>
+
+      <%= if @saved do %>
+        <div class="bg-emerald-success/10 border border-emerald-success/30 text-emerald-success px-stack-md py-stack-sm font-label-mono text-label-mono flex items-center gap-2">
+          <span class="material-symbols-outlined">check_circle</span>
+          Namespace saved successfully!
+          <a href="/dashboard/namespaces" class="underline ml-2">Back to list</a>
+        </div>
+      <% end %>
+
+      <%= if @mode == :visual do %>
+        <.visual_editor
+          namespace_name={@namespace_name}
+          tenant_id={@tenant_id}
+          tenants={@tenants}
+          relations={@relations}
+          saved={@saved}
+        />
+      <% else %>
+        <.json_editor json_text={@json_text} saved={@saved} />
+      <% end %>
+
+      <form id="editor-form"></form>
     </div>
-
-    <%= if @error do %>
-      <div class="bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-lg mb-4 text-sm">{@error}</div>
-    <% end %>
-
-    <%= if @saved do %>
-      <div class="bg-green-900/50 border border-green-700 text-green-300 px-4 py-3 rounded-lg mb-4 text-sm">
-        Namespace saved successfully!
-        <a href="/dashboard/namespaces" class="underline ml-2">Back to list</a>
-      </div>
-    <% end %>
-
-    <%= if @mode == :visual do %>
-      <.visual_editor
-        namespace_name={@namespace_name}
-        tenant_id={@tenant_id}
-        tenants={@tenants}
-        relations={@relations}
-        saved={@saved}
-      />
-    <% else %>
-      <.json_editor json_text={@json_text} saved={@saved} />
-    <% end %>
-
-    <form id="editor-form"></form>
     """
   end
 
@@ -102,55 +117,62 @@ defmodule ZevalWeb.DashboardLive.NamespaceEditorLive do
 
   def visual_editor(assigns) do
     ~H"""
-      <div class="space-y-6">
-        <div class="bg-gray-900 border border-gray-700 rounded-xl p-6">
-          <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-300 mb-1">Namespace Name</label>
-            <input type="text" name="namespace_name" form="editor-form" phx-keyup="set_namespace_name" phx-debounce="200"
-              value={@namespace_name}
-              class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white"
-              placeholder="doc" />
+    <div class="space-y-stack-lg">
+      <div class="bg-surface border border-border-subtle p-stack-md">
+        <div class="mb-stack-md">
+          <label class="block font-label-mono text-label-mono text-text-muted mb-stack-xs">Namespace Name</label>
+          <input type="text" name="namespace_name" form="editor-form" phx-keyup="set_namespace_name" phx-debounce="200"
+            value={@namespace_name}
+            class="w-full bg-surface-container-lowest border border-border-subtle font-label-mono text-label-mono text-text-primary px-3 py-2 focus:border-white focus:ring-0 transition-colors"
+            placeholder="doc" />
         </div>
-
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-300 mb-1">Tenant</label>
-          <select name="tenant_id" form="editor-form" phx-change="set_tenant"
-            class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white">
-            <option value="">Select a tenant</option>
-            <%= for t <- @tenants do %>
-              <option value={t.id} selected={@tenant_id == t.id}><%= t.name %></option>
-            <% end %>
-          </select>
+        <div>
+          <label class="block font-label-mono text-label-mono text-text-muted mb-stack-xs">Tenant</label>
+          <div class="relative">
+            <select name="tenant_id" form="editor-form" phx-change="set_tenant"
+              class="w-full bg-surface-container-lowest border border-border-subtle text-text-primary font-label-mono text-label-mono py-2 px-3 focus:border-white transition-all outline-none appearance-none">
+              <option value="">Select a tenant</option>
+              <%= for t <- @tenants do %>
+                <option value={t.id} selected={@tenant_id == t.id}><%= t.name %></option>
+              <% end %>
+            </select>
+            <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none">expand_more</span>
+          </div>
         </div>
       </div>
 
-      <div class="bg-gray-900 border border-gray-700 rounded-xl p-6">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-semibold text-white">Relations</h3>
+      <div class="bg-surface border border-border-subtle p-stack-md">
+        <div class="flex items-center justify-between mb-stack-md">
+          <h3 class="font-headline-md text-headline-md text-text-primary flex items-center gap-2">
+            <span class="material-symbols-outlined">account_tree</span>
+            Relations
+          </h3>
           <button phx-click="add_relation"
-            class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium">
-            + Add Relation
+            class="border border-border-subtle text-text-secondary px-stack-md py-1.5 font-label-mono text-label-mono flex items-center gap-1 hover:text-text-primary hover:bg-surface-container-high transition-colors">
+            <span class="material-symbols-outlined">add</span>
+            Add Relation
           </button>
         </div>
 
         <%= if @relations == [] do %>
-          <p class="text-gray-500 text-sm">No relations defined. Add one to get started.</p>
+          <p class="font-body-md text-body-md text-text-muted">No relations defined. Add one to get started.</p>
         <% end %>
 
-        <div class="space-y-4">
+        <div class="space-y-stack-md">
           <%= for rel <- @relations do %>
             <.relation_card rel={rel} />
           <% end %>
         </div>
       </div>
 
-      <div class="flex gap-3">
+      <div class="flex gap-stack-sm">
         <button phx-click="save" phx-disable-with="Saving..."
-          class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
-          Save
+          class="bg-emerald-success text-background px-stack-md py-2 font-label-mono text-label-mono font-bold flex items-center gap-2 hover:opacity-90 transition-opacity">
+          <span class="material-symbols-outlined">save</span>
+          Deploy Changes
         </button>
         <a href="/dashboard/namespaces"
-          class="bg-gray-700 hover:bg-gray-600 text-gray-300 px-4 py-2 rounded-lg text-sm">
+          class="border border-border-subtle text-text-secondary px-stack-md py-2 font-label-mono text-label-mono hover:text-text-primary transition-colors">
           Cancel
         </a>
       </div>
@@ -162,17 +184,19 @@ defmodule ZevalWeb.DashboardLive.NamespaceEditorLive do
 
   def relation_card(assigns) do
     ~H"""
-    <div class="bg-gray-800 border border-gray-600 rounded-lg p-4">
-      <div class="flex items-center justify-between mb-3">
-        <div class="flex-1 mr-3">
-          <label class="block text-xs font-medium text-gray-400 mb-0.5">Relation Name</label>
+    <div class="bg-surface-container-low border border-border-subtle p-stack-md group hover:border-primary transition-colors">
+      <div class="flex items-center justify-between mb-stack-md">
+        <div class="flex items-center gap-stack-sm">
+          <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">stars</span>
           <input type="text" name="relation_name" form="editor-form" phx-keyup="set_relation_name" phx-value-rel-id={@rel.id} phx-debounce="200"
             value={@rel.name}
-            class="w-full bg-gray-950 border border-gray-600 rounded px-2 py-1.5 text-sm text-white font-mono"
-            placeholder="viewer" />
+            class="bg-transparent border-b border-border-subtle font-label-mono text-label-mono uppercase text-text-primary focus:border-white focus:ring-0 px-1 py-0.5 w-40"
+            placeholder="relation_name" />
         </div>
         <button phx-click="remove_relation" phx-value-rel-id={@rel.id}
-          class="text-red-400 hover:text-red-300 text-sm shrink-0">Remove</button>
+          class="text-text-muted hover:text-ruby-error transition-colors">
+          <span class="material-symbols-outlined">delete</span>
+        </button>
       </div>
       <.rule_block rule={@rel.rule} depth={0} />
     </div>
@@ -184,11 +208,11 @@ defmodule ZevalWeb.DashboardLive.NamespaceEditorLive do
 
   def rule_block(assigns) do
     ~H"""
-    <div class="border-l-2 border-gray-600 pl-4 ml-0" style={"margin-left: #{@depth * 12}px"}>
-      <div class="flex items-center gap-2 mb-2">
-        <label class="text-xs font-medium text-gray-400">Type</label>
+    <div class="border-l-2 border-border-subtle pl-stack-md" style={"margin-left: #{@depth * 12}px"}>
+      <div class="flex items-center gap-2 mb-stack-xs">
+        <label class="font-label-mono text-label-mono text-text-muted">Type</label>
         <select name="rule_type" form="editor-form" phx-change="rule_set_type" phx-value-rule-id={@rule.id}
-          class="bg-gray-950 border border-gray-600 rounded px-2 py-1 text-sm text-white">
+          class="bg-background border border-border-subtle font-label-mono text-label-mono text-text-primary focus:ring-0 focus:border-white px-2 py-1">
           <option value="this" selected={@rule.type == "this"}>this</option>
           <option value="computed_userset" selected={@rule.type == "computed_userset"}>computed_userset</option>
           <option value="tuple_to_userset" selected={@rule.type == "tuple_to_userset"}>tuple_to_userset</option>
@@ -208,37 +232,40 @@ defmodule ZevalWeb.DashboardLive.NamespaceEditorLive do
       <% end %>
 
       <%= if @rule.type == "union" or @rule.type == "intersection" do %>
-        <div class="space-y-2 mt-2">
+        <div class="space-y-stack-xs mt-stack-xs">
           <%= for child <- @rule.children do %>
             <div class="relative group">
               <.rule_block rule={child} depth={@depth + 1} />
               <button phx-click="rule_remove_child" phx-value-rule-id={child.id} phx-value-parent-id={@rule.id}
-                class="absolute -top-1 -right-1 bg-red-800 hover:bg-red-700 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">
-                &times;
+                class="absolute -top-1 -right-1 bg-surface-container-highest border border-border-subtle text-text-muted hover:text-ruby-error w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                <span class="material-symbols-outlined text-[12px]">close</span>
               </button>
             </div>
           <% end %>
           <button phx-click="rule_add_child" phx-value-rule-id={@rule.id}
-            class="text-blue-400 hover:text-blue-300 text-xs">+ Add child</button>
+            class="text-text-muted hover:text-text-primary font-label-mono text-label-mono text-xs flex items-center gap-1">
+            <span class="material-symbols-outlined">add</span>
+            Add child
+          </button>
         </div>
       <% end %>
 
       <%= if @rule.type == "exclusion" do %>
-        <div class="mt-2 space-y-2">
-          <div class="text-xs font-medium text-gray-400 mb-1">Base</div>
+        <div class="mt-stack-xs space-y-stack-xs">
+          <div class="font-label-mono text-label-mono text-text-muted">Base</div>
           <div class="relative group">
             <.rule_block rule={@rule.base} depth={@depth + 1} />
             <button phx-click="rule_remove_child" phx-value-rule-id={@rule.base.id} phx-value-parent-id={@rule.id}
-              class="absolute -top-1 -right-1 bg-red-800 hover:bg-red-700 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">
-              &times;
+              class="absolute -top-1 -right-1 bg-surface-container-highest border border-border-subtle text-text-muted hover:text-ruby-error w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+              <span class="material-symbols-outlined text-[12px]">close</span>
             </button>
           </div>
-          <div class="text-xs font-medium text-gray-400 mb-1">Subtract</div>
+          <div class="font-label-mono text-label-mono text-text-muted">Subtract</div>
           <div class="relative group">
             <.rule_block rule={@rule.subtract} depth={@depth + 1} />
             <button phx-click="rule_remove_child" phx-value-rule-id={@rule.subtract.id} phx-value-parent-id={@rule.id}
-              class="absolute -top-1 -right-1 bg-red-800 hover:bg-red-700 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">
-              &times;
+              class="absolute -top-1 -right-1 bg-surface-container-highest border border-border-subtle text-text-muted hover:text-ruby-error w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+              <span class="material-symbols-outlined text-[12px]">close</span>
             </button>
           </div>
         </div>
@@ -254,11 +281,11 @@ defmodule ZevalWeb.DashboardLive.NamespaceEditorLive do
 
   def param_input(assigns) do
     ~H"""
-    <div class="mb-2">
-      <label class="block text-xs font-medium text-gray-400 mb-0.5"><%= @label %></label>
+    <div class="mb-stack-xs">
+      <label class="block font-label-mono text-label-mono text-text-muted mb-0.5"><%= @label %></label>
       <input type="text" name="rule_param" form="editor-form" phx-keyup="rule_set_param" phx-value-rule-id={@rule_id} phx-value-param={@param} phx-debounce="200"
         value={@value}
-        class="w-full bg-gray-950 border border-gray-600 rounded px-2 py-1.5 text-sm text-white font-mono"
+        class="w-full bg-background border border-border-subtle font-code-block text-code-block text-text-primary px-2 py-1.5 focus:border-white focus:ring-0"
         placeholder={@label} />
     </div>
     """
@@ -269,20 +296,27 @@ defmodule ZevalWeb.DashboardLive.NamespaceEditorLive do
 
   def json_editor(assigns) do
     ~H"""
-    <div class="bg-gray-900 border border-gray-700 rounded-xl p-6">
-      <div class="mb-4">
-        <label class="block text-sm font-medium text-gray-300 mb-1">Raw JSON Configuration</label>
-        <textarea name="json_text" form="editor-form" phx-change="json_change"
-          class="w-full bg-gray-950 border border-gray-600 rounded-lg px-3 py-2 text-sm font-mono text-green-300 min-h-[400px]"
-          placeholder="{ &quot;name&quot;: &quot;doc&quot;, &quot;relations&quot;: { ... } }"><%= @json_text %></textarea>
+    <div class="bg-surface-container-lowest border border-border-subtle overflow-hidden">
+      <div class="bg-surface-container-low border-b border-border-subtle px-stack-md py-2 flex items-center justify-between">
+        <div class="flex items-center gap-stack-sm">
+          <div class="flex gap-1.5">
+            <div class="w-2.5 h-2.5 rounded-full bg-ruby-error/50"></div>
+            <div class="w-2.5 h-2.5 rounded-full bg-secondary-container"></div>
+            <div class="w-2.5 h-2.5 rounded-full bg-emerald-success/50"></div>
+          </div>
+          <span class="font-label-mono text-label-mono text-text-muted uppercase ml-stack-md">namespace_config.json</span>
+        </div>
       </div>
-      <div class="flex gap-3">
+      <textarea name="json_text" form="editor-form" phx-change="json_change"
+        class="w-full bg-transparent p-stack-md font-code-block text-code-block text-text-primary focus:ring-0 border-none resize-none custom-scrollbar min-h-[400px]"
+        placeholder="{ &quot;name&quot;: &quot;doc&quot;, &quot;relations&quot;: { ... } }"><%= @json_text %></textarea>
+      <div class="bg-surface-container-low border-t border-border-subtle px-stack-md py-stack-sm flex gap-stack-sm">
         <button phx-click="save_json"
-          class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">Save</button>
+          class="bg-emerald-success text-background px-stack-md py-1.5 font-label-mono text-label-mono font-bold hover:opacity-90 transition-opacity">Deploy Changes</button>
         <button phx-click="json_validate"
-          class="bg-gray-700 hover:bg-gray-600 text-gray-300 px-4 py-2 rounded-lg text-sm">Validate</button>
+          class="border border-border-subtle text-text-secondary px-stack-md py-1.5 font-label-mono text-label-mono hover:text-text-primary transition-colors">Validate</button>
         <a href="/dashboard/namespaces"
-          class="bg-gray-700 hover:bg-gray-600 text-gray-300 px-4 py-2 rounded-lg text-sm">Cancel</a>
+          class="border border-border-subtle text-text-secondary px-stack-md py-1.5 font-label-mono text-label-mono hover:text-text-primary transition-colors">Cancel</a>
       </div>
     </div>
     """

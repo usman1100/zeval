@@ -29,54 +29,84 @@ defmodule ZevalWeb.DashboardLive.TenantDetailLive do
 
   def render(assigns) do
     ~H"""
-    <a href="/dashboard/tenants" class="text-blue-400 hover:text-blue-300 text-sm mb-4 inline-block">&larr; Back to Tenants</a>
-
-    <div class="bg-gray-900 border border-gray-800 rounded-xl p-6 mb-6">
-      <h2 class="text-2xl font-bold text-white mb-2">{@tenant.name}</h2>
-      <p class="text-sm text-gray-400 font-mono mb-4">ID: {@tenant.id}</p>
-      <div class="flex gap-3">
-        <a href="/dashboard/api-keys" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm">Create API Key</a>
-        <a href="/dashboard/namespaces" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm">New Namespace</a>
-      </div>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      <div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
-        <h3 class="text-lg font-semibold text-white mb-4">Service Accounts</h3>
-        <%= if @accounts == [] do %>
-          <p class="text-gray-500 text-sm">No service accounts.</p>
-        <% else %>
-          <div class="space-y-2">
-            <%= for acct <- @accounts do %>
-              <div class="flex items-center justify-between py-2 border-b border-gray-800 last:border-0">
-                <div>
-                  <div class="text-sm text-white">{acct.name}</div>
-                  <div class="text-xs text-gray-500 font-mono">{acct.key_prefix}..</div>
-                </div>
-                <span class="bg-green-900 text-green-300 px-2 py-0.5 rounded-full text-xs">Active</span>
-              </div>
-            <% end %>
-          </div>
-        <% end %>
+    <div class="flex flex-col gap-stack-lg">
+      <div>
+        <nav class="flex items-center gap-2 font-label-mono text-label-mono mb-stack-xs">
+          <a href="/dashboard/tenants" class="text-text-muted hover:text-text-primary transition-colors">Tenants</a>
+          <span class="text-text-muted">/</span>
+          <span class="text-text-primary">{@tenant.name}</span>
+        </nav>
       </div>
 
-      <div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
-        <h3 class="text-lg font-semibold text-white mb-4">Namespaces</h3>
-        <%= if @namespaces == [] do %>
-          <p class="text-gray-500 text-sm">No namespaces defined.</p>
-        <% else %>
-          <div class="space-y-2">
-            <%= for ns <- @namespaces do %>
-              <div class="flex items-center justify-between py-2 border-b border-gray-800 last:border-0">
-                <div>
-                  <div class="text-sm text-white">{ns.name}</div>
-                  <div class="text-xs text-gray-500">v{ns.version}</div>
-                </div>
-                <a href="/dashboard/namespaces" class="text-blue-400 hover:text-blue-300 text-xs">View</a>
-              </div>
-            <% end %>
+      <div class="bg-surface border border-border-subtle p-stack-md">
+        <div class="flex items-center gap-3 mb-stack-sm">
+          <div class="w-10 h-10 flex items-center justify-center bg-surface-container-highest border border-border-subtle font-label-mono text-primary text-sm uppercase">
+            {String.slice(@tenant.name, 0, 2)}
           </div>
-        <% end %>
+          <div>
+            <h2 class="font-headline-lg text-headline-lg text-text-primary">{@tenant.name}</h2>
+            <p class="font-label-mono text-label-mono text-text-muted">ID: {@tenant.id}</p>
+          </div>
+        </div>
+        <div class="flex gap-stack-sm mt-stack-md pt-stack-md border-t border-border-subtle">
+          <a href="/dashboard/api-keys" class="bg-emerald-success text-background px-stack-md py-2 font-label-mono text-label-mono font-bold flex items-center gap-2 hover:opacity-90 transition-opacity">
+            <span class="material-symbols-outlined">vpn_key</span>
+            Create API Key
+          </a>
+          <a href="/dashboard/namespaces/new" class="border border-border-subtle text-text-secondary px-stack-md py-2 font-label-mono text-label-mono flex items-center gap-2 hover:text-text-primary transition-colors">
+            <span class="material-symbols-outlined">add</span>
+            New Namespace
+          </a>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-stack-lg">
+        <div class="bg-surface border border-border-subtle p-stack-md">
+          <h3 class="font-headline-md text-headline-md text-text-primary mb-stack-md flex items-center gap-2">
+            <span class="material-symbols-outlined">vpn_key</span>
+            Service Accounts
+          </h3>
+          <%= if @accounts == [] do %>
+            <p class="font-body-md text-body-md text-text-muted">No service accounts.</p>
+          <% else %>
+            <div class="divide-y divide-border-subtle">
+              <%= for acct <- @accounts do %>
+                <div class="flex items-center justify-between py-stack-sm">
+                  <div>
+                    <div class="font-body-md text-body-md text-text-primary">{acct.name}</div>
+                    <div class="font-label-mono text-label-mono text-text-muted">{acct.key_prefix}..</div>
+                  </div>
+                  <span class="inline-flex items-center px-2 py-0.5 bg-emerald-success/10 text-emerald-success font-label-mono text-[11px]">Active</span>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+
+        <div class="bg-surface border border-border-subtle p-stack-md">
+          <h3 class="font-headline-md text-headline-md text-text-primary mb-stack-md flex items-center gap-2">
+            <span class="material-symbols-outlined">dns</span>
+            Namespaces
+          </h3>
+          <%= if @namespaces == [] do %>
+            <p class="font-body-md text-body-md text-text-muted">No namespaces defined.</p>
+          <% else %>
+            <div class="divide-y divide-border-subtle">
+              <%= for ns <- @namespaces do %>
+                <div class="flex items-center justify-between py-stack-sm">
+                  <div>
+                    <div class="font-body-md text-body-md text-text-primary">{ns.name}</div>
+                    <div class="font-label-mono text-label-mono text-text-muted">v{ns.version}</div>
+                  </div>
+                  <a href={"/dashboard/namespaces/#{ns.id}/edit"} class="font-label-mono text-label-mono text-text-muted hover:text-text-primary transition-colors flex items-center gap-1">
+                    Edit
+                    <span class="material-symbols-outlined">chevron_right</span>
+                  </a>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
       </div>
     </div>
     """

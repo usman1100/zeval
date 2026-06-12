@@ -18,93 +18,151 @@ defmodule ZevalWeb.DashboardLive.TenantLive do
 
   def render(assigns) do
     ~H"""
-    <div class="flex items-center justify-between mb-6">
-      <h2 class="text-2xl font-bold text-white">Tenants</h2>
-      <button
-        phx-click="show_create"
-        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
-      >
-        + New Tenant
-      </button>
-    </div>
-
-    <%= if @show_create do %>
-      <div class="bg-gray-900 border border-gray-700 rounded-xl p-6 mb-6">
-        <h3 class="text-lg font-semibold text-white mb-4">Create Tenant</h3>
-        <%= if @error do %>
-          <div class="bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-lg mb-4 text-sm">{@error}</div>
-        <% end %>
-        <form phx-submit="create">
-          <div class="flex gap-3 items-end">
-            <div class="flex-1">
-              <label class="block text-sm font-medium text-gray-300 mb-1">Name</label>
-              <input
-                type="text"
-                name="name"
-                phx-keyup="update_name"
-                phx-debounce="200"
-                class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white"
-                placeholder="my-org"
-              />
-            </div>
-            <button
-              type="submit"
-              phx-disable-with="Creating..."
-              class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
-            >
-              Create
-            </button>
-            <button
-              type="button"
-              phx-click="hide_create"
-              class="bg-gray-700 hover:bg-gray-600 text-gray-300 px-4 py-2 rounded-lg text-sm"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
+    <div class="flex flex-col gap-stack-lg">
+      <div class="flex items-end justify-between">
+        <div>
+          <nav class="flex items-center gap-2 font-label-mono text-label-mono mb-stack-xs">
+            <span class="text-text-muted">Zeval Engine</span>
+            <span class="text-text-muted">/</span>
+            <span class="text-text-primary">Tenants</span>
+          </nav>
+          <h2 class="font-headline-lg text-headline-lg text-text-primary">Tenants Management</h2>
+          <p class="text-text-secondary font-body-md text-body-md mt-1">Manage isolated environments and their associated resources.</p>
+        </div>
+        <button
+          phx-click="show_create"
+          class="bg-emerald-success text-background px-stack-md py-2 font-label-mono text-label-mono font-bold flex items-center gap-2 hover:opacity-90 transition-opacity"
+        >
+          <span class="material-symbols-outlined">add</span>
+          New Tenant
+        </button>
       </div>
-    <% end %>
 
-    <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-      <table class="w-full">
-        <thead>
-          <tr class="border-b border-gray-800">
-            <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Name</th>
-            <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">ID</th>
-            <th class="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Created</th>
-            <th class="text-right px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <%= for tenant <- @tenants do %>
-            <tr class="border-b border-gray-800 hover:bg-gray-800/50">
-              <td class="px-4 py-3">
-                <a href={"/dashboard/tenants/#{tenant.id}"} class="text-blue-400 hover:text-blue-300 font-medium">{tenant.name}</a>
-              </td>
-              <td class="px-4 py-3 text-sm text-gray-400 font-mono">{String.slice(tenant.id, 0, 8)}..</td>
-              <td class="px-4 py-3 text-sm text-gray-400">
-                <%= if tenant.inserted_at do %>
-                  {Calendar.strftime(tenant.inserted_at, "%Y-%m-%d")}
-                <% end %>
-              </td>
-              <td class="px-4 py-3 text-right">
-                <button
-                  phx-click="delete"
-                  phx-value-id={tenant.id}
-                  phx-confirm="Delete this tenant and all its data?"
-                  class="text-red-400 hover:text-red-300 text-sm"
-                >
-                  Delete
-                </button>
-              </td>
-            </tr>
+      <%= if @show_create do %>
+        <div class="bg-surface border border-border-subtle p-stack-md">
+          <h3 class="font-headline-md text-headline-md text-text-primary mb-stack-md">Create Tenant</h3>
+          <%= if @error do %>
+            <div class="bg-ruby-error/10 border border-ruby-error/30 text-ruby-error px-stack-md py-stack-sm font-label-mono text-label-mono mb-stack-md">{@error}</div>
           <% end %>
-          <%= if @tenants == [] do %>
-            <tr><td colspan="4" class="px-4 py-8 text-center text-gray-500">No tenants yet. Create one to get started.</td></tr>
-          <% end %>
-        </tbody>
-      </table>
+          <form phx-submit="create">
+            <div class="flex gap-3 items-end">
+              <div class="flex-1">
+                <label class="block font-label-mono text-label-mono text-text-muted mb-stack-xs">Name</label>
+                <input
+                  type="text"
+                  name="name"
+                  phx-keyup="update_name"
+                  phx-debounce="200"
+                  class="w-full bg-surface-container-lowest border border-border-subtle font-label-mono text-label-mono text-text-primary px-3 py-2 focus:border-white focus:ring-0 transition-colors"
+                  placeholder="my-org"
+                />
+              </div>
+              <button
+                type="submit"
+                phx-disable-with="Creating..."
+                class="bg-emerald-success text-background px-stack-md py-2 font-label-mono text-label-mono font-bold"
+              >
+                Create
+              </button>
+              <button
+                type="button"
+                phx-click="hide_create"
+                class="border border-border-subtle text-text-secondary px-stack-md py-2 font-label-mono text-label-mono hover:text-text-primary transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      <% end %>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-gutter">
+        <div class="bg-surface border border-border-subtle p-stack-md">
+          <p class="font-label-mono text-label-mono text-text-muted uppercase mb-1">Total Tenants</p>
+          <p class="font-headline-lg text-headline-lg text-emerald-success">{length(@tenants)}</p>
+        </div>
+        <div class="bg-surface border border-border-subtle p-stack-md">
+          <p class="font-label-mono text-label-mono text-text-muted uppercase mb-1">Active Namespaces</p>
+          <p class="font-headline-lg text-headline-lg text-text-primary">-</p>
+        </div>
+        <div class="bg-surface border border-border-subtle p-stack-md">
+          <p class="font-label-mono text-label-mono text-text-muted uppercase mb-1">Service Accounts</p>
+          <p class="font-headline-lg text-headline-lg text-text-primary">-</p>
+        </div>
+        <div class="bg-surface border border-border-subtle p-stack-md">
+          <p class="font-label-mono text-label-mono text-text-muted uppercase mb-1">System Health</p>
+          <div class="flex items-center gap-2 mt-2">
+            <span class="w-3 h-3 rounded-full bg-emerald-success"></span>
+            <span class="font-label-mono text-label-mono text-emerald-success uppercase">Operational</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-surface border border-border-subtle overflow-hidden">
+        <div class="overflow-x-auto custom-scrollbar">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-surface-container-low border-b border-border-subtle">
+                <th class="px-stack-md py-stack-sm font-label-mono text-label-mono text-text-muted uppercase">Name</th>
+                <th class="px-stack-md py-stack-sm font-label-mono text-label-mono text-text-muted uppercase">Created Date</th>
+                <th class="px-stack-md py-stack-sm font-label-mono text-label-mono text-text-muted uppercase">Tenant ID</th>
+                <th class="px-stack-md py-stack-sm font-label-mono text-label-mono text-text-muted uppercase text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border-subtle">
+              <%= for tenant <- @tenants do %>
+                <tr class="hover:bg-surface-container-high transition-colors group">
+                  <td class="px-stack-md py-stack-sm">
+                    <a href={"/dashboard/tenants/#{tenant.id}"} class="flex items-center gap-3">
+                      <div class="w-8 h-8 flex items-center justify-center bg-surface-container-highest border border-border-subtle font-label-mono text-primary text-sm uppercase">
+                        {String.slice(tenant.name, 0, 2)}
+                      </div>
+                      <div>
+                        <p class="font-body-md text-body-md text-text-primary">{tenant.name}</p>
+                        <p class="font-label-mono text-[10px] text-text-muted">ID: {String.slice(tenant.id, 0, 12)}..</p>
+                      </div>
+                    </a>
+                  </td>
+                  <td class="px-stack-md py-stack-sm font-label-mono text-label-mono text-text-secondary">
+                    <%= if tenant.inserted_at do %>
+                      {Calendar.strftime(tenant.inserted_at, "%Y-%m-%d %H:%M")}
+                    <% end %>
+                  </td>
+                  <td class="px-stack-md py-stack-sm font-code-block text-code-block text-text-muted">
+                    {String.slice(tenant.id, 0, 8)}
+                  </td>
+                  <td class="px-stack-md py-stack-sm text-right">
+                    <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <a href={"/dashboard/tenants/#{tenant.id}"} class="p-1 text-text-muted hover:text-text-primary transition-colors" title="View Details">
+                        <span class="material-symbols-outlined">visibility</span>
+                      </a>
+                      <button
+                        phx-click="delete"
+                        phx-value-id={tenant.id}
+                        phx-confirm="Delete this tenant and all its data?"
+                        class="p-1 text-text-muted hover:text-ruby-error transition-colors"
+                        title="Delete Tenant"
+                      >
+                        <span class="material-symbols-outlined">delete</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              <% end %>
+              <%= if @tenants == [] do %>
+                <tr>
+                  <td colspan="4" class="px-stack-md py-stack-lg text-center font-body-md text-body-md text-text-muted">
+                    No tenants yet. Create one to get started.
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+        <div class="px-stack-md py-stack-sm bg-surface-container-low border-t border-border-subtle flex items-center justify-between">
+          <p class="font-label-mono text-label-mono text-text-muted">Showing {length(@tenants)} of {length(@tenants)} results</p>
+        </div>
+      </div>
     </div>
     """
   end
