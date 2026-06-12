@@ -1,0 +1,53 @@
+<div class="flex flex-col gap-stack-lg">
+    <div class="flex items-end justify-between">
+      <div>
+        <nav class="flex items-center gap-2 font-label-mono text-label-mono mb-stack-xs">
+          <a href="/dashboard/namespaces" class="text-text-muted hover:text-text-primary transition-colors">Namespaces</a>
+          <span class="text-text-muted">/</span>
+          <span class="text-text-primary"><%= if @namespace_name == "", do: "New Namespace", else: @namespace_name %></span>
+        </nav>
+        <h2 class="font-headline-lg text-headline-lg text-text-primary">
+          <%= if @namespace_name == "", do: "New Namespace", else: "Edit: #{@namespace_name}" %>
+        </h2>
+        <p class="text-text-secondary font-body-md text-body-md mt-1">Configure access control logic and relation rules.</p>
+      </div>
+      <div class="flex items-center gap-stack-sm">
+        <div class="flex bg-surface-container-low p-0.5 border border-border-subtle">
+          <button phx-click="switch_mode"
+            class={"px-stack-md py-1.5 font-label-mono text-label-mono transition-all " <> if @mode == :visual, do: "bg-secondary-container text-on-secondary-container", else: "text-text-muted hover:text-text-primary"}>
+            VISUAL
+          </button>
+          <button phx-click="switch_mode"
+            class={"px-stack-md py-1.5 font-label-mono text-label-mono transition-all " <> if @mode == :json, do: "bg-secondary-container text-on-secondary-container", else: "text-text-muted hover:text-text-primary"}>
+            RAW JSON
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <%= if @error do %>
+      <div class="bg-ruby-error/10 border border-ruby-error/30 text-ruby-error px-stack-md py-stack-sm font-label-mono text-label-mono">{@error}</div>
+    <% end %>
+
+    <%= if @saved do %>
+      <div class="bg-emerald-success/10 border border-emerald-success/30 text-emerald-success px-stack-md py-stack-sm font-label-mono text-label-mono flex items-center gap-2">
+        <span class="material-symbols-outlined">check_circle</span>
+        Namespace saved successfully!
+        <a href="/dashboard/namespaces" class="underline ml-2">Back to list</a>
+      </div>
+    <% end %>
+
+    <%= if @mode == :visual do %>
+      <.visual_editor
+        namespace_name={@namespace_name}
+        tenant_id={@tenant_id}
+        tenants={@tenants}
+        relations={@relations}
+        saved={@saved}
+      />
+    <% else %>
+      <.json_editor json_text={@json_text} saved={@saved} />
+    <% end %>
+
+    <form id="editor-form"></form>
+  </div>

@@ -1,0 +1,58 @@
+<div class="flex flex-col gap-stack-lg">
+    <div>
+      <nav class="flex items-center gap-2 font-label-mono text-label-mono mb-stack-xs">
+        <span class="text-text-muted">Zeval Engine</span>
+        <span class="text-text-muted">/</span>
+        <span class="text-text-primary">Tuples</span>
+      </nav>
+      <h2 class="font-headline-lg text-headline-lg text-text-primary">Tuples</h2>
+      <p class="text-text-secondary font-body-md text-body-md mt-1">Read, write, and delete relationship tuples.</p>
+    </div>
+
+    <div class="bg-surface border border-border-subtle p-stack-md">
+      <label class="block font-label-mono text-label-mono text-text-muted mb-stack-xs">Tenant</label>
+      <form id="tenant-form" phx-change="select_tenant" class="relative">
+        <select
+          name="tenant_id"
+          class="w-full bg-surface-container-lowest border border-border-subtle text-text-primary font-label-mono text-label-mono py-2 px-3 focus:border-white transition-all outline-none appearance-none"
+        >
+          <option value="">Select a tenant</option>
+          <%= for t <- @tenants do %>
+            <option value={t.id} selected={@selected_tenant_id == t.id}>{t.name}</option>
+          <% end %>
+        </select>
+        <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none">expand_more</span>
+      </form>
+    </div>
+
+    <div class="flex bg-surface-container-low p-0.5 border border-border-subtle w-fit">
+      <button phx-click="set_tab" phx-value-tab="write"
+        class={"px-stack-md py-1.5 font-label-mono text-label-mono transition-all " <> if @tab == :write, do: "bg-secondary-container text-on-secondary-container", else: "text-text-muted hover:text-text-primary"}>
+        Write
+      </button>
+      <button phx-click="set_tab" phx-value-tab="read"
+        class={"px-stack-md py-1.5 font-label-mono text-label-mono transition-all " <> if @tab == :read, do: "bg-secondary-container text-on-secondary-container", else: "text-text-muted hover:text-text-primary"}>
+        Read
+      </button>
+      <button phx-click="set_tab" phx-value-tab="delete"
+        class={"px-stack-md py-1.5 font-label-mono text-label-mono transition-all " <> if @tab == :delete, do: "bg-secondary-container text-on-secondary-container", else: "text-text-muted hover:text-text-primary"}>
+        Delete
+      </button>
+    </div>
+
+    <%= if @error do %>
+      <div class="bg-ruby-error/10 border border-ruby-error/30 text-ruby-error px-stack-md py-stack-sm font-label-mono text-label-mono">{@error}</div>
+    <% end %>
+
+    <%= if @tab == :write do %>
+      <.write_tab rows={@rows} />
+    <% end %>
+
+    <%= if @tab == :read do %>
+      <.read_tab filter={@read_filter} subject_type={@subject_type} zookie={@zookie} results={@results} result_tuples={@result_tuples} json_export={@json_export} />
+    <% end %>
+
+    <%= if @tab == :delete do %>
+      <.delete_tab rows={@rows} results={@results} />
+    <% end %>
+  </div>

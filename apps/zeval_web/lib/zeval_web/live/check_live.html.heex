@@ -1,0 +1,98 @@
+<div class="flex flex-col gap-stack-lg">
+    <div>
+      <nav class="flex items-center gap-2 font-label-mono text-label-mono mb-stack-xs">
+        <span class="text-text-muted">Zeval Engine</span>
+        <span class="text-text-muted">/</span>
+        <span class="text-text-primary">Check Tool</span>
+      </nav>
+      <h2 class="font-headline-lg text-headline-lg text-text-primary">Permission Checker</h2>
+      <p class="text-text-secondary font-body-md text-body-md mt-1">Interactive permission testing with resolution tree.</p>
+    </div>
+
+    <div class="bg-surface border border-border-subtle p-stack-md">
+      <div class="mb-stack-md">
+        <label class="block font-label-mono text-label-mono text-text-muted mb-stack-xs">Tenant</label>
+        <form id="tenant-form" phx-change="select_tenant" class="relative">
+          <select
+            name="tenant_id"
+            class="w-full bg-surface-container-lowest border border-border-subtle text-text-primary font-label-mono text-label-mono py-2 px-3 focus:border-white transition-all outline-none appearance-none"
+          >
+            <option value="">Select a tenant</option>
+            <%= for t <- @tenants do %>
+              <option value={t.id} selected={@selected_tenant_id == t.id}>{t.name}</option>
+            <% end %>
+          </select>
+          <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none">expand_more</span>
+        </form>
+      </div>
+
+      <div class="grid grid-cols-3 gap-stack-sm mb-stack-md">
+        <div>
+          <label class="block font-label-mono text-label-mono text-text-muted mb-0.5">Namespace</label>
+          <input type="text" name="namespace" phx-keyup="update_field" phx-value-field="namespace" phx-debounce="200"
+            value={@namespace}
+            class="w-full bg-background border border-border-subtle font-code-block text-code-block text-text-primary px-2 py-1.5 focus:border-white focus:ring-0"
+            placeholder="doc" />
+        </div>
+        <div>
+          <label class="block font-label-mono text-label-mono text-text-muted mb-0.5">Object ID</label>
+          <input type="text" name="object_id" phx-keyup="update_field" phx-value-field="object_id" phx-debounce="200"
+            value={@object_id}
+            class="w-full bg-background border border-border-subtle font-code-block text-code-block text-text-primary px-2 py-1.5 focus:border-white focus:ring-0"
+            placeholder="doc-1" />
+        </div>
+        <div>
+          <label class="block font-label-mono text-label-mono text-text-muted mb-0.5">Relation</label>
+          <input type="text" name="relation" phx-keyup="update_field" phx-value-field="relation" phx-debounce="200"
+            value={@relation}
+            class="w-full bg-background border border-border-subtle font-code-block text-code-block text-text-primary px-2 py-1.5 focus:border-white focus:ring-0"
+            placeholder="viewer" />
+        </div>
+      </div>
+
+      <div class="mb-stack-md">
+        <div class="flex items-center justify-between mb-0.5">
+          <label class="font-label-mono text-label-mono text-text-muted">Subject</label>
+          <button phx-click="toggle_subject_type"
+            class="font-label-mono text-[10px] text-text-muted hover:text-text-primary border border-border-subtle px-1.5 py-0.5 transition-colors">
+            {@subject_type}
+          </button>
+        </div>
+        <%= if @subject_type == "user" do %>
+          <input type="text" name="subject" phx-keyup="update_field" phx-value-field="subject" phx-debounce="200"
+            value={@subject}
+            class="w-full bg-background border border-border-subtle font-code-block text-code-block text-text-primary px-2 py-1.5 focus:border-white focus:ring-0"
+            placeholder="user:alice" />
+        <% else %>
+          <div class="grid grid-cols-3 gap-stack-sm">
+            <input type="text" name="userset_ns" phx-keyup="update_field" phx-value-field="userset_namespace" phx-debounce="200"
+              value={@userset_namespace}
+              class="w-full bg-background border border-border-subtle font-code-block text-code-block text-text-primary px-2 py-1.5 focus:border-white focus:ring-0"
+              placeholder="Namespace" />
+            <input type="text" name="userset_oid" phx-keyup="update_field" phx-value-field="userset_object_id" phx-debounce="200"
+              value={@userset_object_id}
+              class="w-full bg-background border border-border-subtle font-code-block text-code-block text-text-primary px-2 py-1.5 focus:border-white focus:ring-0"
+              placeholder="Object ID" />
+            <input type="text" name="userset_rel" phx-keyup="update_field" phx-value-field="userset_relation" phx-debounce="200"
+              value={@userset_relation}
+              class="w-full bg-background border border-border-subtle font-code-block text-code-block text-text-primary px-2 py-1.5 focus:border-white focus:ring-0"
+              placeholder="Relation" />
+          </div>
+        <% end %>
+      </div>
+
+      <button phx-click="run_check" phx-disable-with="Checking..."
+        class="bg-emerald-success text-background px-stack-md py-2 font-label-mono text-label-mono font-bold flex items-center gap-2 hover:opacity-90 transition-opacity">
+        <span class="material-symbols-outlined">fact_check</span>
+        Run Check
+      </button>
+    </div>
+
+    <%= if @error do %>
+      <div class="bg-ruby-error/10 border border-ruby-error/30 text-ruby-error px-stack-md py-stack-sm font-label-mono text-label-mono">{@error}</div>
+    <% end %>
+
+    <%= if @result do %>
+      <.result_card result={@result} />
+    <% end %>
+  </div>

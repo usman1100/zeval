@@ -1,0 +1,67 @@
+<div class="flex flex-col gap-stack-lg">
+    <div>
+      <nav class="flex items-center gap-2 font-label-mono text-label-mono mb-stack-xs">
+        <span class="text-text-muted">Zeval Engine</span>
+        <span class="text-text-muted">/</span>
+        <span class="text-text-primary">Expand Tool</span>
+      </nav>
+      <h2 class="font-headline-lg text-headline-lg text-text-primary">Expand Tool</h2>
+      <p class="text-text-secondary font-body-md text-body-md mt-1">View all users with access to a resource.</p>
+    </div>
+
+    <div class="bg-surface border border-border-subtle p-stack-md">
+      <div class="mb-stack-md">
+        <label class="block font-label-mono text-label-mono text-text-muted mb-stack-xs">Tenant</label>
+        <form id="tenant-form" phx-change="select_tenant" class="relative">
+          <select
+            name="tenant_id"
+            class="w-full bg-surface-container-lowest border border-border-subtle text-text-primary font-label-mono text-label-mono py-2 px-3 focus:border-white transition-all outline-none appearance-none"
+          >
+            <option value="">Select a tenant</option>
+            <%= for t <- @tenants do %>
+              <option value={t.id} selected={@selected_tenant_id == t.id}>{t.name}</option>
+            <% end %>
+          </select>
+          <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-text-muted pointer-events-none">expand_more</span>
+        </form>
+      </div>
+
+      <div class="grid grid-cols-3 gap-stack-sm mb-stack-md">
+        <div>
+          <label class="block font-label-mono text-label-mono text-text-muted mb-0.5">Namespace</label>
+          <input type="text" name="namespace" phx-keyup="update_field" phx-value-field="namespace" phx-debounce="200"
+            value={@namespace}
+            class="w-full bg-background border border-border-subtle font-code-block text-code-block text-text-primary px-2 py-1.5 focus:border-white focus:ring-0"
+            placeholder="doc" />
+        </div>
+        <div>
+          <label class="block font-label-mono text-label-mono text-text-muted mb-0.5">Object ID</label>
+          <input type="text" name="object_id" phx-keyup="update_field" phx-value-field="object_id" phx-debounce="200"
+            value={@object_id}
+            class="w-full bg-background border border-border-subtle font-code-block text-code-block text-text-primary px-2 py-1.5 focus:border-white focus:ring-0"
+            placeholder="doc-1" />
+        </div>
+        <div>
+          <label class="block font-label-mono text-label-mono text-text-muted mb-0.5">Relation</label>
+          <input type="text" name="relation" phx-keyup="update_field" phx-value-field="relation" phx-debounce="200"
+            value={@relation}
+            class="w-full bg-background border border-border-subtle font-code-block text-code-block text-text-primary px-2 py-1.5 focus:border-white focus:ring-0"
+            placeholder="viewer" />
+        </div>
+      </div>
+
+      <button phx-click="run_expand" phx-disable-with="Expanding..."
+        class="bg-emerald-success text-background px-stack-md py-2 font-label-mono text-label-mono font-bold flex items-center gap-2 hover:opacity-90 transition-opacity">
+        <span class="material-symbols-outlined">unfold_more</span>
+        Expand
+      </button>
+    </div>
+
+    <%= if @error do %>
+      <div class="bg-ruby-error/10 border border-ruby-error/30 text-ruby-error px-stack-md py-stack-sm font-label-mono text-label-mono">{@error}</div>
+    <% end %>
+
+    <%= if @result do %>
+      <.expand_result_tree tree={@result} depth={0} />
+    <% end %>
+  </div>
