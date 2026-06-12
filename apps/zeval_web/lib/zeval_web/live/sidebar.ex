@@ -24,7 +24,6 @@ defmodule ZevalWeb.DashboardLive.Sidebar do
         <.nav_link href="/dashboard/expand" icon="unfold_more" active={@active == "expand"}>Expand Tool</.nav_link>
       </nav>
       <div class="mt-auto pt-stack-md border-t border-border-subtle space-y-stack-xs">
-        <.nav_link href="/dashboard/settings" icon="settings" active={false}>Settings</.nav_link>
         <.nav_link href="/dashboard/logout" icon="logout" active={false}>Sign Out</.nav_link>
       </div>
     </aside>
