@@ -18,13 +18,18 @@ defmodule ZevalCore.DashboardUsers do
 
   @doc "Gets a dashboard user by email."
   def get_by_email(email) when is_binary(email) do
-    Repo.one(from u in DashboardUser, where: u.email == ^email)
+    Repo.one(from(u in DashboardUser, where: u.email == ^email))
   end
 
   @doc "Validates email and password. Returns `{:ok, user}` or `{:error, reason}`."
   def authenticate(email, password) when is_binary(email) and is_binary(password) do
     case get_by_email(email) do
-      nil -> {:error, "invalid email or password"}
+      nil ->
+        # Run a dummy hash so response time doesn't reveal whether the email
+        # exists (email-enumeration timing oracle).
+        Bcrypt.no_user_verify()
+        {:error, "invalid email or password"}
+
       user ->
         if Bcrypt.verify_pass(password, user.password_hash) do
           {:ok, user}
@@ -35,5 +40,5 @@ defmodule ZevalCore.DashboardUsers do
   end
 
   @doc "Returns all dashboard users."
-  def list, do: Repo.all(from u in DashboardUser, order_by: u.email)
+  def list, do: Repo.all(from(u in DashboardUser, order_by: u.email))
 end

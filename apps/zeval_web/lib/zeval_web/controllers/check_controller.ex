@@ -3,7 +3,12 @@ defmodule ZevalWeb.CheckController do
 
   alias ZevalCore.Check
 
-  def check(conn, %{"namespace" => ns, "object_id" => oid, "relation" => rel, "subject" => raw_subject}) do
+  def check(conn, %{
+        "namespace" => ns,
+        "object_id" => oid,
+        "relation" => rel,
+        "subject" => raw_subject
+      }) do
     tenant_id = conn.assigns.tenant_id
     subject = parse_subject(raw_subject)
     opts = if conn.params["zookie"], do: [consistency: conn.params["zookie"]], else: []
@@ -26,7 +31,14 @@ defmodule ZevalWeb.CheckController do
 
   defp parse_subject(subject) when is_binary(subject), do: {:user, subject}
   defp parse_subject(%{"type" => "user", "id" => uid}), do: {:user, uid}
-  defp parse_subject(%{"type" => "userset", "namespace" => ns, "object_id" => oid, "relation" => rel}),
-    do: {:userset, ns, oid, rel}
+
+  defp parse_subject(%{
+         "type" => "userset",
+         "namespace" => ns,
+         "object_id" => oid,
+         "relation" => rel
+       }),
+       do: {:userset, ns, oid, rel}
+
   defp parse_subject(_), do: {:user, ""}
 end

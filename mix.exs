@@ -8,6 +8,13 @@ defmodule ZevalEngine.MixProject do
       start_permanent: Mix.env() == :prod,
       elixir: "~> 1.19",
       deps: deps(),
+      test_coverage: [tool: ExCoveralls],
+      preferred_cli_env: [
+        coveralls: :test,
+        "coveralls.html": :test,
+        "coveralls.json": :test
+      ],
+      dialyzer: [plt_add_apps: [:ex_unit, :mix]],
       releases: [
         zeval_engine: [
           include_executables_for: [:unix],
@@ -46,7 +53,14 @@ defmodule ZevalEngine.MixProject do
 
       # Test-only
       {:stream_data, "~> 1.1", only: :test},
-      {:ex_machina, "~> 2.8", only: :test}
+      {:ex_machina, "~> 2.8", only: :test},
+      {:excoveralls, "~> 0.18", only: :test},
+
+      # Static analysis & docs (security-sensitive project)
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.4", only: [:dev], runtime: false},
+      {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
+      {:ex_doc, "~> 0.34", only: :dev, runtime: false}
     ]
   end
 end

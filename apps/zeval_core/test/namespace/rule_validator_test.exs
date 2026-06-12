@@ -68,6 +68,26 @@ defmodule ZevalCore.Namespace.RuleValidatorTest do
       assert length(rule["intersection"]) == 2
     end
 
+    test "empty union is rejected (would otherwise deny-all silently)" do
+      assert {:error, msg} = RuleValidator.validate(%{"union" => []})
+      assert msg =~ "at least one"
+    end
+
+    test "empty intersection is rejected (would otherwise allow-all)" do
+      assert {:error, msg} = RuleValidator.validate(%{"intersection" => []})
+      assert msg =~ "at least one"
+    end
+
+    test "config with an empty intersection relation is rejected" do
+      config = %{
+        "name" => "doc",
+        "relations" => %{"viewer" => %{"intersection" => []}}
+      }
+
+      assert {:error, msg} = RuleValidator.validate_config(config)
+      assert msg =~ "viewer"
+    end
+
     test "exclusion rule" do
       assert {:ok, rule} =
                RuleValidator.validate(%{

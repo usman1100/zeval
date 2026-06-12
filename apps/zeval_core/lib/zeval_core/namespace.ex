@@ -20,12 +20,11 @@ defmodule ZevalCore.Namespace do
     with {:ok, validated} <- RuleValidator.validate_config(params),
          config_name = validated["name"],
          existing <- get_record(tenant_id, config_name) do
-
       attrs = %{
         tenant_id: tenant_id,
         name: config_name,
         config: validated,
-        version: (existing && existing.version || 0) + 1
+        version: ((existing && existing.version) || 0) + 1
       }
 
       result =
@@ -43,6 +42,7 @@ defmodule ZevalCore.Namespace do
         {:ok, config} ->
           Cache.put(tenant_id, config_name, config)
           {:ok, config}
+
         {:error, _} = error ->
           error
       end
@@ -59,11 +59,14 @@ defmodule ZevalCore.Namespace do
     case Cache.get(tenant_id, name) do
       nil ->
         case get_record(tenant_id, name) do
-          nil -> {:error, :not_found}
+          nil ->
+            {:error, :not_found}
+
           config ->
             Cache.put(tenant_id, name, config)
             {:ok, config}
         end
+
       config ->
         {:ok, config}
     end
@@ -74,7 +77,52 @@ defmodule ZevalCore.Namespace do
   """
   @spec list(binary()) :: [NamespaceConfig.t()]
   def list(tenant_id) do
-    Repo.all(from c in NamespaceConfig, where: c.tenant_id == ^tenant_id, order_by: c.name)
+    Repo.all(from(c in NamespaceConfig, where: c.tenant_id == ^tenant_id, order_by: c.name))
+  end
+
+  @doc """
+  Gets a namespace config record by id, scoped to tenants the user belongs to.
+  Returns the record or nil.
+  """
+  @spec get_record_for_user(binary(), binary()) :: NamespaceConfig.t() | nil
+  def get_record_for_user(user_id, id) do
+    Repo.one(
+      from(c in NamespaceConfig,
+        join: m in ZevalCore.TenantMembership,
+        on: m.tenant_id == c.tenant_id,
+        where: c.id == ^id and m.user_id == ^user_id
+      )
+    )
+  end
+
+  @doc """
+  Lists namespace configs across every tenant the user belongs to, as plain
+  maps including the tenant name (for dashboard listing). Optionally filtered
+  to a single tenant the user must also belong to.
+  """
+  @spec list_for_user(binary(), binary() | nil) :: [map()]
+  def list_for_user(user_id, tenant_id \\ nil) do
+    base =
+      from(c in NamespaceConfig,
+        join: t in ZevalCore.Tenant,
+        on: t.id == c.tenant_id,
+        join: m in ZevalCore.TenantMembership,
+        on: m.tenant_id == c.tenant_id,
+        where: m.user_id == ^user_id,
+        order_by: [desc: c.inserted_at],
+        select: %{
+          id: c.id,
+          name: c.name,
+          version: c.version,
+          inserted_at: c.inserted_at,
+          tenant_id: c.tenant_id,
+          tenant_name: t.name,
+          config: c.config
+        }
+      )
+
+    query = if tenant_id, do: from([c] in base, where: c.tenant_id == ^tenant_id), else: base
+    Repo.all(query)
   end
 
   @doc """
@@ -83,7 +131,9 @@ defmodule ZevalCore.Namespace do
   @spec delete(binary(), String.t()) :: :ok | {:error, :not_found}
   def delete(tenant_id, name) do
     case get_record(tenant_id, name) do
-      nil -> {:error, :not_found}
+      nil ->
+        {:error, :not_found}
+
       config ->
         Repo.delete!(config)
         Cache.invalidate(tenant_id, name)
@@ -95,8 +145,9 @@ defmodule ZevalCore.Namespace do
 
   defp get_record(tenant_id, name) do
     Repo.one(
-      from c in NamespaceConfig,
+      from(c in NamespaceConfig,
         where: c.tenant_id == ^tenant_id and c.name == ^name
+      )
     )
   end
 end

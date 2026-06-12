@@ -1,22 +1,35 @@
-# Seeds for development — creates an initial dashboard admin user.
+# Seeds — creates an initial dashboard admin user from environment variables.
 #
-# Usage: mix run priv/repo/seeds.exs
+# Usage:
+#   SEED_ADMIN_EMAIL=you@example.com SEED_ADMIN_PASSWORD=... mix run priv/repo/seeds.exs
+#
+# Refuses to run without both variables set, so there is never a hardcoded
+# default-credentials backdoor. The password is never printed.
 
 alias ZevalCore.{Repo, DashboardUser}
 
-admin = %{
-  email: "admin@zeval.dev",
-  name: "Admin",
-  password: "password123"
-}
+email = System.get_env("SEED_ADMIN_EMAIL")
+password = System.get_env("SEED_ADMIN_PASSWORD")
 
-case Repo.get_by(DashboardUser, email: admin.email) do
-  nil ->
-    %DashboardUser{}
-    |> DashboardUser.changeset(admin)
-    |> Repo.insert!()
-    |> then(fn user -> IO.puts("Created admin user: #{user.email} / password123") end)
+cond do
+  is_nil(email) or is_nil(password) ->
+    IO.puts(:stderr, """
+    Skipping admin seed: set SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD to create one.
+    """)
 
-  _user ->
-    IO.puts("Admin user already exists: #{admin.email}")
+  String.length(password) < 12 ->
+    raise "SEED_ADMIN_PASSWORD must be at least 12 characters"
+
+  true ->
+    case Repo.get_by(DashboardUser, email: email) do
+      nil ->
+        %DashboardUser{}
+        |> DashboardUser.changeset(%{email: email, name: "Admin", password: password})
+        |> Repo.insert!()
+
+        IO.puts("Created admin user: #{email}")
+
+      _user ->
+        IO.puts("Admin user already exists: #{email}")
+    end
 end

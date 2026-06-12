@@ -3,8 +3,7 @@ import Config
 # Shared config for all environments
 config :zeval_core, ecto_repos: [ZevalCore.Repo]
 
-config :zeval_core, ZevalCore.Repo,
-  migration_timestamps: [type: :timestamptz]
+config :zeval_core, ZevalCore.Repo, migration_timestamps: [type: :timestamptz]
 
 config :zeval_web, ZevalWeb.Endpoint,
   url: [host: "localhost"],
@@ -16,8 +15,18 @@ config :zeval_web, ZevalWeb.Endpoint,
     layout: false
   ]
 
-config :logger, :default_handler,
-  level: :info
+# Dashboard session options. These are DEV defaults; production overrides
+# the salts and sets `secure: true` from env vars in runtime.exs.
+config :zeval_web, :session_options,
+  store: :cookie,
+  key: "_zeval_dashboard",
+  signing_salt: "dev-signing-salt-change-in-prod",
+  encryption_salt: "dev-encryption-salt-change-in-prod",
+  http_only: true,
+  secure: false,
+  same_site: "Lax"
+
+config :logger, :default_handler, level: :info
 
 config :zeval_web, env: "dev"
 

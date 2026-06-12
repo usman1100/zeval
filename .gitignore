@@ -19,3 +19,18 @@ erl_crash.dump
 # Also ignore archive artifacts (built via "mix archive.build").
 *.ez
 
+# Environment files with secrets — never commit these.
+.env
+.env.*
+!.env.example
+
+# Editor / OS / tooling artifacts.
+.elixir_ls/
+**/.elixir_ls/
+.vscode/
+.idea/
+*.iml
+.DS_Store
+*.swp
+*~
+

@@ -38,7 +38,11 @@ defmodule ZevalCore.Check do
       zookie: Keyword.get(opts, :consistency),
       visited: Keyword.get(opts, :visited, MapSet.new()),
       path: [],
-      depth: 0
+      depth: 0,
+      # Per-request memo of tuple reads keyed by filter. The zookie is fixed
+      # for the request, so reads are stable — this collapses the repeated
+      # lookups that union/intersection branches would otherwise each issue.
+      reads: %{}
     }
 
     result =
@@ -140,9 +144,8 @@ defmodule ZevalCore.Check do
 
   defp eval_rule(%{"this" => _}, state, ns, obj, rel, subject) do
     filter = %{namespace: ns, object_id: obj, relation: rel, subject: subject}
-    opts = zookie_opts(state)
-    found = Tuples.read(state.tenant_id, filter, opts)
-    allowed = length(found) > 0
+    {found, state} = cached_read(state, filter)
+    allowed = found != []
 
     step = %{
       rule: "this",
@@ -157,7 +160,14 @@ defmodule ZevalCore.Check do
 
   # -- computed_userset -------------------------------------------------------
 
-  defp eval_rule(%{"computed_userset" => %{"relation" => target_rel}}, state, ns, obj, _rel, subject) do
+  defp eval_rule(
+         %{"computed_userset" => %{"relation" => target_rel}},
+         state,
+         ns,
+         obj,
+         _rel,
+         subject
+       ) do
     {allowed, final_state} = do_check(state, ns, obj, target_rel, subject)
 
     step = %{
@@ -174,10 +184,12 @@ defmodule ZevalCore.Check do
   # -- tuple_to_userset --------------------------------------------------------
 
   defp eval_rule(
-         %{"tuple_to_userset" => %{
-           "tupleset_relation" => ts_rel,
-           "computed_userset_relation" => cu_rel
-         }},
+         %{
+           "tuple_to_userset" => %{
+             "tupleset_relation" => ts_rel,
+             "computed_userset_relation" => cu_rel
+           }
+         },
          state,
          ns,
          obj,
@@ -186,12 +198,12 @@ defmodule ZevalCore.Check do
        ) do
     # Step 1: find all tuples linking this object to parents via ts_rel
     filter = %{namespace: ns, object_id: obj, relation: ts_rel}
-    opts = zookie_opts(state)
-    parent_tuples = Tuples.read(state.tenant_id, filter, opts)
+    {parent_tuples, state} = cached_read(state, filter)
 
     # Step 2: for each parent tuple that is a userset, check cu_rel on that parent
     {allowed, final_state} =
-      Enum.reduce_while(parent_tuples, {false, state}, fn parent_tuple, {_acc_allowed, acc_state} ->
+      Enum.reduce_while(parent_tuples, {false, state}, fn parent_tuple,
+                                                          {_acc_allowed, acc_state} ->
         case parent_tuple.subject do
           {:userset, parent_ns, parent_obj, _parent_rel} ->
             {child_allowed, child_state} =
@@ -238,7 +250,8 @@ defmodule ZevalCore.Check do
 
   defp eval_rule(%{"union" => children}, state, ns, obj, rel, subject) do
     {allowed, final_state, child_steps} =
-      Enum.reduce_while(children, {false, state, []}, fn child_rule, {_acc_allowed, acc_state, acc_children} ->
+      Enum.reduce_while(children, {false, state, []}, fn child_rule,
+                                                         {_acc_allowed, acc_state, acc_children} ->
         {child_allowed, child_state} = eval_rule(child_rule, acc_state, ns, obj, rel, subject)
 
         child_step = %{
@@ -267,7 +280,8 @@ defmodule ZevalCore.Check do
 
   defp eval_rule(%{"intersection" => children}, state, ns, obj, rel, subject) do
     {all_allowed, final_state, child_steps} =
-      Enum.reduce(children, {true, state, []}, fn child_rule, {acc_allowed, acc_state, acc_children} ->
+      Enum.reduce(children, {true, state, []}, fn child_rule,
+                                                  {acc_allowed, acc_state, acc_children} ->
         {child_allowed, child_state} = eval_rule(child_rule, acc_state, ns, obj, rel, subject)
 
         child_step = %{
@@ -290,7 +304,14 @@ defmodule ZevalCore.Check do
 
   # -- exclusion --------------------------------------------------------------
 
-  defp eval_rule(%{"exclusion" => %{"base" => base, "subtract" => subtract}}, state, ns, obj, rel, subject) do
+  defp eval_rule(
+         %{"exclusion" => %{"base" => base, "subtract" => subtract}},
+         state,
+         ns,
+         obj,
+         rel,
+         subject
+       ) do
     {base_allowed, state_after_base} = eval_rule(base, state, ns, obj, rel, subject)
 
     {subtract_allowed, final_state} = eval_rule(subtract, state_after_base, ns, obj, rel, subject)
@@ -327,6 +348,18 @@ defmodule ZevalCore.Check do
     case state.zookie do
       nil -> []
       token -> [consistency: token]
+    end
+  end
+
+  # Read-through memo: identical filters within one check resolve to one query.
+  defp cached_read(state, filter) do
+    case Map.fetch(state.reads, filter) do
+      {:ok, cached} ->
+        {cached, state}
+
+      :error ->
+        result = Tuples.read(state.tenant_id, filter, zookie_opts(state))
+        {result, %{state | reads: Map.put(state.reads, filter, result)}}
     end
   end
 

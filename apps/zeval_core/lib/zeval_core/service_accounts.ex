@@ -17,8 +17,8 @@ defmodule ZevalCore.ServiceAccounts do
   The `raw_key` must be shown to the user once — it will never be
   visible again.
   """
-  @spec create(binary(), String.t()) :: {:ok, map()} | {:error, Ecto.Changeset.t()}
-  def create(tenant_id, name) when is_binary(name) do
+  @spec create(binary(), String.t(), keyword()) :: {:ok, map()} | {:error, Ecto.Changeset.t()}
+  def create(tenant_id, name, opts \\ []) when is_binary(name) do
     raw_key = generate_key()
     key_prefix = String.slice(raw_key, 0, 12)
     key_hash = hash_key(raw_key)
@@ -28,7 +28,8 @@ defmodule ZevalCore.ServiceAccounts do
       tenant_id: tenant_id,
       name: name,
       key_hash: key_hash,
-      key_prefix: key_prefix
+      key_prefix: key_prefix,
+      created_by: Keyword.get(opts, :created_by)
     })
     |> Repo.insert()
     |> case do
@@ -45,9 +46,10 @@ defmodule ZevalCore.ServiceAccounts do
   @spec get_by_hash(binary()) :: {:ok, ServiceAccount.t()} | {:error, :not_found}
   def get_by_hash(key_hash) do
     case Repo.one(
-      from a in ServiceAccount,
-        where: a.key_hash == ^key_hash and is_nil(a.revoked_at)
-    ) do
+           from(a in ServiceAccount,
+             where: a.key_hash == ^key_hash and is_nil(a.revoked_at)
+           )
+         ) do
       nil -> {:error, :not_found}
       account -> {:ok, account}
     end
@@ -67,17 +69,45 @@ defmodule ZevalCore.ServiceAccounts do
   end
 
   @doc """
-  Revokes a service account by ID.
+  Fetches a service account by ID, or nil if the ID is missing/malformed.
+  Includes revoked accounts (callers decide what to do with the status).
+  """
+  @spec get(binary()) :: ServiceAccount.t() | nil
+  def get(account_id) when is_binary(account_id) do
+    case Ecto.UUID.cast(account_id) do
+      {:ok, _} -> Repo.get(ServiceAccount, account_id)
+      :error -> nil
+    end
+  end
+
+  def get(_), do: nil
+
+  @doc """
+  Revokes a service account by ID. Atomic and idempotent: a single
+  `UPDATE ... WHERE id = ? AND revoked_at IS NULL` so concurrent callers
+  don't both "succeed" and an already-revoked account reports not_found.
+
   Returns `{:ok, account}` or `{:error, :not_found}`.
   """
-  @spec revoke(binary()) :: {:ok, ServiceAccount.t()} | {:error, :not_found}
-  def revoke(account_id) do
-    case Repo.get(ServiceAccount, account_id) do
-      nil -> {:error, :not_found}
-      account ->
-        account
-        |> Ecto.Changeset.change(revoked_at: DateTime.utc_now())
-        |> Repo.update()
+  @spec revoke(binary(), keyword()) :: {:ok, ServiceAccount.t()} | {:error, :not_found}
+  def revoke(account_id, opts \\ []) when is_binary(account_id) do
+    case Ecto.UUID.cast(account_id) do
+      :error ->
+        {:error, :not_found}
+
+      {:ok, _} ->
+        query =
+          from(a in ServiceAccount,
+            where: a.id == ^account_id and is_nil(a.revoked_at),
+            select: a
+          )
+
+        set = [revoked_at: DateTime.utc_now(), revoked_by: Keyword.get(opts, :revoked_by)]
+
+        case Repo.update_all(query, set: set) do
+          {1, [account]} -> {:ok, account}
+          {0, _} -> {:error, :not_found}
+        end
     end
   end
 
@@ -87,9 +117,26 @@ defmodule ZevalCore.ServiceAccounts do
   @spec list(binary()) :: [ServiceAccount.t()]
   def list(tenant_id) do
     Repo.all(
-      from a in ServiceAccount,
+      from(a in ServiceAccount,
         where: a.tenant_id == ^tenant_id and is_nil(a.revoked_at),
         order_by: a.inserted_at
+      )
+    )
+  end
+
+  @doc """
+  Lists service accounts (active and revoked) across every tenant the
+  dashboard user belongs to, newest first.
+  """
+  @spec list_for_user(binary()) :: [ServiceAccount.t()]
+  def list_for_user(user_id) do
+    Repo.all(
+      from(a in ServiceAccount,
+        join: m in ZevalCore.TenantMembership,
+        on: m.tenant_id == a.tenant_id,
+        where: m.user_id == ^user_id,
+        order_by: [desc: a.inserted_at]
+      )
     )
   end
 

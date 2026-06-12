@@ -27,15 +27,23 @@ RUN mix release zeval_engine
 # Stage 2: Runtime
 FROM debian:bookworm-slim
 
-RUN apt-get update && apt-get install -y libstdc++6 openssl ca-certificates locales && rm -rf /var/lib/apt/lists/* && \
+RUN apt-get update && apt-get install -y libstdc++6 openssl ca-certificates locales curl && rm -rf /var/lib/apt/lists/* && \
     echo "C.UTF-8" > /etc/locale.gen && locale-gen
 
+# Run as an unprivileged user, not root.
+RUN groupadd -r app && useradd -r -g app -d /app app
+
 WORKDIR /app
-COPY --from=builder /app/_build/prod/rel/zeval_engine ./
+COPY --from=builder --chown=app:app /app/_build/prod/rel/zeval_engine ./
+
+USER app
 
 EXPOSE 4000
 
 ENV LANG=C.UTF-8
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
+  CMD curl -fsS http://localhost:4000/health || exit 1
 
 # Run migrations then start
 CMD ["sh", "-c", "bin/zeval_engine eval \"ZevalCore.Release.migrate()\" && bin/zeval_engine start"]

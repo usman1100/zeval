@@ -17,18 +17,15 @@ defmodule ZevalWeb.Plugs.RateLimit do
     %{
       max_requests: Keyword.get(opts, :max_requests, 200),
       window_ms: Keyword.get(opts, :window_ms, 60_000),
-      bucket_name: Keyword.get(opts, :bucket_name, "general")
+      bucket_name: Keyword.get(opts, :bucket_name, "general"),
+      key: Keyword.get(opts, :key, :account)
     }
   end
 
-  def call(conn, %{max_requests: max, window_ms: window, bucket_name: bucket} = _opts) do
-    account_id =
-      case conn.assigns[:service_account] do
-        %{id: id} -> id
-        _ -> "anonymous"
-      end
+  def call(conn, %{max_requests: max, window_ms: window, bucket_name: bucket, key: key} = _opts) do
+    identity = rate_limit_identity(conn, key)
 
-    case ZevalWeb.RateLimiter.hit("#{bucket}:#{account_id}", window, max) do
+    case ZevalWeb.RateLimiter.hit("#{bucket}:#{identity}", window, max) do
       {:allow, _count} ->
         conn
 
@@ -50,5 +47,26 @@ defmodule ZevalWeb.Plugs.RateLimit do
         )
         |> halt()
     end
+  end
+
+  # Authenticated routes key by service account id; unauthenticated bootstrap
+  # routes key by client IP. The id/IP is hashed so rate-limit buckets can't be
+  # probed to enumerate account ids.
+  defp rate_limit_identity(conn, :ip) do
+    conn.remote_ip
+    |> :inet.ntoa()
+    |> to_string()
+    |> hash()
+  end
+
+  defp rate_limit_identity(conn, _account) do
+    case conn.assigns[:service_account] do
+      %{id: id} -> hash(id)
+      _ -> "anonymous"
+    end
+  end
+
+  defp hash(value) do
+    :crypto.hash(:sha256, value) |> Base.encode16(case: :lower)
   end
 end

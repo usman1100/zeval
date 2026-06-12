@@ -12,7 +12,10 @@ defmodule ZevalCore.TuplesTest do
 
     tenant_id = UUID.generate()
     tenant_bin = Ecto.UUID.dump!(tenant_id)
-    Repo.insert_all("tenants", [%{id: tenant_bin, name: "tuple-test-#{System.unique_integer([:positive])}"}])
+
+    Repo.insert_all("tenants", [
+      %{id: tenant_bin, name: "tuple-test-#{System.unique_integer([:positive])}"}
+    ])
 
     # Write a basic namespace config so tuple operations make sense later
     # (not strictly needed for tuples itself, but check tests need it)
@@ -28,35 +31,98 @@ defmodule ZevalCore.TuplesTest do
 
   describe "write/2" do
     test "writes a single user tuple", %{tenant_id: tid} do
-      tuple = %Tuple{namespace: "doc", object_id: "readme", relation: "viewer", subject: {:user, "alice"}}
+      tuple = %Tuple{
+        namespace: "doc",
+        object_id: "readme",
+        relation: "viewer",
+        subject: {:user, "alice"}
+      }
+
       assert {:ok, result} = Tuples.write(tid, [tuple])
       assert result.written == 1
       assert String.starts_with?(result.zookie, "zookie:")
     end
 
     test "writes a userset tuple", %{tenant_id: tid} do
-      tuple = %Tuple{namespace: "doc", object_id: "readme", relation: "viewer", subject: {:userset, "group", "eng", "member"}}
+      tuple = %Tuple{
+        namespace: "doc",
+        object_id: "readme",
+        relation: "viewer",
+        subject: {:userset, "group", "eng", "member"}
+      }
+
       assert {:ok, result} = Tuples.write(tid, [tuple])
       assert result.written == 1
     end
 
     test "writes multiple tuples in one call", %{tenant_id: tid} do
       tuples = [
-        %Tuple{namespace: "doc", object_id: "readme", relation: "viewer", subject: {:user, "alice"}},
+        %Tuple{
+          namespace: "doc",
+          object_id: "readme",
+          relation: "viewer",
+          subject: {:user, "alice"}
+        },
         %Tuple{namespace: "doc", object_id: "readme", relation: "viewer", subject: {:user, "bob"}}
       ]
 
       assert {:ok, result} = Tuples.write(tid, tuples)
       assert result.written == 2
     end
+
+    test "writes are idempotent — re-writing the same tuple inserts no duplicate", %{
+      tenant_id: tid
+    } do
+      tuple = %Tuple{
+        namespace: "doc",
+        object_id: "readme",
+        relation: "viewer",
+        subject: {:user, "alice"}
+      }
+
+      assert {:ok, %{written: 1}} = Tuples.write(tid, [tuple])
+      assert {:ok, %{written: 0}} = Tuples.write(tid, [tuple])
+
+      assert length(
+               Tuples.read(tid, %{namespace: "doc", object_id: "readme", relation: "viewer"})
+             ) == 1
+    end
+
+    test "a userset write is also idempotent", %{tenant_id: tid} do
+      tuple = %Tuple{
+        namespace: "doc",
+        object_id: "x",
+        relation: "viewer",
+        subject: {:userset, "group", "eng", "member"}
+      }
+
+      assert {:ok, %{written: 1}} = Tuples.write(tid, [tuple])
+      assert {:ok, %{written: 0}} = Tuples.write(tid, [tuple])
+      assert length(Tuples.read(tid, %{namespace: "doc", object_id: "x"})) == 1
+    end
   end
 
   describe "read/3" do
     setup %{tenant_id: tid} do
       Tuples.write(tid, [
-        %Tuple{namespace: "doc", object_id: "readme", relation: "viewer", subject: {:user, "alice"}},
-        %Tuple{namespace: "doc", object_id: "readme", relation: "viewer", subject: {:user, "bob"}},
-        %Tuple{namespace: "doc", object_id: "readme", relation: "editor", subject: {:user, "alice"}},
+        %Tuple{
+          namespace: "doc",
+          object_id: "readme",
+          relation: "viewer",
+          subject: {:user, "alice"}
+        },
+        %Tuple{
+          namespace: "doc",
+          object_id: "readme",
+          relation: "viewer",
+          subject: {:user, "bob"}
+        },
+        %Tuple{
+          namespace: "doc",
+          object_id: "readme",
+          relation: "editor",
+          subject: {:user, "alice"}
+        },
         %Tuple{namespace: "org", object_id: "acme", relation: "member", subject: {:user, "carol"}}
       ])
 
@@ -103,7 +169,12 @@ defmodule ZevalCore.TuplesTest do
   describe "delete/2" do
     setup %{tenant_id: tid} do
       Tuples.write(tid, [
-        %Tuple{namespace: "doc", object_id: "readme", relation: "viewer", subject: {:user, "alice"}},
+        %Tuple{
+          namespace: "doc",
+          object_id: "readme",
+          relation: "viewer",
+          subject: {:user, "alice"}
+        },
         %Tuple{namespace: "doc", object_id: "readme", relation: "viewer", subject: {:user, "bob"}}
       ])
 
@@ -111,37 +182,133 @@ defmodule ZevalCore.TuplesTest do
     end
 
     test "soft-deletes a tuple", %{tenant_id: tid} do
-      assert {:ok, result} = Tuples.delete(tid, [
-        %Tuple{namespace: "doc", object_id: "readme", relation: "viewer", subject: {:user, "alice"}}
-      ])
+      assert {:ok, result} =
+               Tuples.delete(tid, [
+                 %Tuple{
+                   namespace: "doc",
+                   object_id: "readme",
+                   relation: "viewer",
+                   subject: {:user, "alice"}
+                 }
+               ])
 
       assert result.deleted == 1
     end
 
     test "deleted tuple no longer appears in reads", %{tenant_id: tid} do
       Tuples.delete(tid, [
-        %Tuple{namespace: "doc", object_id: "readme", relation: "viewer", subject: {:user, "alice"}}
+        %Tuple{
+          namespace: "doc",
+          object_id: "readme",
+          relation: "viewer",
+          subject: {:user, "alice"}
+        }
       ])
 
-      results = Tuples.read(tid, %{namespace: "doc", object_id: "readme", relation: "viewer", subject: {:user, "alice"}})
+      results =
+        Tuples.read(tid, %{
+          namespace: "doc",
+          object_id: "readme",
+          relation: "viewer",
+          subject: {:user, "alice"}
+        })
+
       assert results == []
     end
 
     test "non-deleted tuples still appear after deleting others", %{tenant_id: tid} do
       Tuples.delete(tid, [
-        %Tuple{namespace: "doc", object_id: "readme", relation: "viewer", subject: {:user, "alice"}}
+        %Tuple{
+          namespace: "doc",
+          object_id: "readme",
+          relation: "viewer",
+          subject: {:user, "alice"}
+        }
       ])
 
-      results = Tuples.read(tid, %{namespace: "doc", object_id: "readme", relation: "viewer", subject: {:user, "bob"}})
+      results =
+        Tuples.read(tid, %{
+          namespace: "doc",
+          object_id: "readme",
+          relation: "viewer",
+          subject: {:user, "bob"}
+        })
+
       assert length(results) == 1
+    end
+
+    test "deleting one userset subject leaves other subjects on the same object/relation intact",
+         %{tenant_id: tid} do
+      # Several subjects share (doc, x, viewer): two usersets and one user.
+      Tuples.write(tid, [
+        %Tuple{
+          namespace: "doc",
+          object_id: "x",
+          relation: "viewer",
+          subject: {:userset, "group", "eng", "member"}
+        },
+        %Tuple{
+          namespace: "doc",
+          object_id: "x",
+          relation: "viewer",
+          subject: {:userset, "group", "sales", "member"}
+        },
+        %Tuple{namespace: "doc", object_id: "x", relation: "viewer", subject: {:user, "alice"}}
+      ])
+
+      assert {:ok, %{deleted: 1}} =
+               Tuples.delete(tid, [
+                 %Tuple{
+                   namespace: "doc",
+                   object_id: "x",
+                   relation: "viewer",
+                   subject: {:userset, "group", "eng", "member"}
+                 }
+               ])
+
+      results = Tuples.read(tid, %{namespace: "doc", object_id: "x", relation: "viewer"})
+      subjects = Enum.map(results, & &1.subject) |> Enum.sort()
+
+      assert subjects == [
+               {:user, "alice"},
+               {:userset, "group", "sales", "member"}
+             ]
+    end
+
+    test "deleting a userset subject does not touch a user subject with no user_id match", %{
+      tenant_id: tid
+    } do
+      Tuples.write(tid, [
+        %Tuple{
+          namespace: "doc",
+          object_id: "y",
+          relation: "viewer",
+          subject: {:userset, "group", "eng", "member"}
+        },
+        %Tuple{namespace: "doc", object_id: "y", relation: "viewer", subject: {:user, "bob"}}
+      ])
+
+      assert {:ok, %{deleted: 1}} =
+               Tuples.delete(tid, [
+                 %Tuple{
+                   namespace: "doc",
+                   object_id: "y",
+                   relation: "viewer",
+                   subject: {:userset, "group", "eng", "member"}
+                 }
+               ])
+
+      results = Tuples.read(tid, %{namespace: "doc", object_id: "y", relation: "viewer"})
+      assert Enum.map(results, & &1.subject) == [{:user, "bob"}]
     end
   end
 
   describe "zookie consistency" do
     test "read without zookie sees current state only", %{tenant_id: tid} do
-      {:ok, _} = Tuples.write(tid, [
-        %Tuple{namespace: "doc", object_id: "x", relation: "viewer", subject: {:user, "alice"}}
-      ])
+      {:ok, _} =
+        Tuples.write(tid, [
+          %Tuple{namespace: "doc", object_id: "x", relation: "viewer", subject: {:user, "alice"}}
+        ])
 
       Tuples.delete(tid, [
         %Tuple{namespace: "doc", object_id: "x", relation: "viewer", subject: {:user, "alice"}}
@@ -153,9 +320,10 @@ defmodule ZevalCore.TuplesTest do
     end
 
     test "read with zookie sees tuples that existed at snapshot time", %{tenant_id: tid} do
-      {:ok, write_result} = Tuples.write(tid, [
-        %Tuple{namespace: "doc", object_id: "y", relation: "viewer", subject: {:user, "alice"}}
-      ])
+      {:ok, write_result} =
+        Tuples.write(tid, [
+          %Tuple{namespace: "doc", object_id: "y", relation: "viewer", subject: {:user, "alice"}}
+        ])
 
       zookie = write_result.zookie
 
@@ -182,7 +350,11 @@ defmodule ZevalCore.TuplesTest do
 
       # Read with the pre-dated zookie — should NOT see alice's tuple
       # because it was inserted after the snapshot
-      results = Tuples.read(tid, %{namespace: "doc", object_id: "z"}, consistency: "zookie:deterministic-test")
+      results =
+        Tuples.read(tid, %{namespace: "doc", object_id: "z"},
+          consistency: "zookie:deterministic-test"
+        )
+
       assert results == []
 
       # Write bob later
@@ -195,10 +367,35 @@ defmodule ZevalCore.TuplesTest do
       assert length(results_no_zookie) == 2
     end
 
-    test "write returns a usable zookie", %{tenant_id: tid} do
-      {:ok, result} = Tuples.write(tid, [
-        %Tuple{namespace: "doc", object_id: "a", relation: "viewer", subject: {:user, "alice"}}
+    test "a zookie from another tenant is not honored", %{tenant_id: tid} do
+      # Mint a deterministic zookie for a DIFFERENT tenant, pre-dating the write.
+      other_tenant = UUID.generate()
+      other_bin = Ecto.UUID.dump!(other_tenant)
+
+      Repo.insert_all("tenants", [
+        %{id: other_bin, name: "other-#{System.unique_integer([:positive])}"}
       ])
+
+      past = DateTime.utc_now() |> DateTime.add(-1, :second)
+      Zookie.mint_raw(other_tenant, past, "zookie:cross-tenant")
+
+      Tuples.write(tid, [
+        %Tuple{namespace: "doc", object_id: "ct", relation: "viewer", subject: {:user, "alice"}}
+      ])
+
+      # Using the other tenant's zookie must fall back to active-only for THIS
+      # tenant (i.e. it sees alice, not a foreign snapshot).
+      results =
+        Tuples.read(tid, %{namespace: "doc", object_id: "ct"}, consistency: "zookie:cross-tenant")
+
+      assert length(results) == 1
+    end
+
+    test "write returns a usable zookie", %{tenant_id: tid} do
+      {:ok, result} =
+        Tuples.write(tid, [
+          %Tuple{namespace: "doc", object_id: "a", relation: "viewer", subject: {:user, "alice"}}
+        ])
 
       zookie = Tuples.Zookie.decode(result.zookie)
       assert zookie != nil

@@ -12,7 +12,10 @@ defmodule ZevalCore.CheckTest do
 
     tenant_id = UUID.generate()
     tenant_bin = Ecto.UUID.dump!(tenant_id)
-    Repo.insert_all("tenants", [%{id: tenant_bin, name: "check-test-#{System.unique_integer([:positive])}"}])
+
+    Repo.insert_all("tenants", [
+      %{id: tenant_bin, name: "check-test-#{System.unique_integer([:positive])}"}
+    ])
 
     on_exit(fn ->
       Repo.delete_all(Tuples.RelationTuple)
@@ -38,7 +41,12 @@ defmodule ZevalCore.CheckTest do
       })
 
       Tuples.write(tid, [
-        %Tuple{namespace: "doc", object_id: "readme", relation: "viewer", subject: {:user, "alice"}}
+        %Tuple{
+          namespace: "doc",
+          object_id: "readme",
+          relation: "viewer",
+          subject: {:user, "alice"}
+        }
       ])
 
       :ok
@@ -76,7 +84,12 @@ defmodule ZevalCore.CheckTest do
       })
 
       Tuples.write(tid, [
-        %Tuple{namespace: "doc", object_id: "readme", relation: "editor", subject: {:user, "alice"}}
+        %Tuple{
+          namespace: "doc",
+          object_id: "readme",
+          relation: "editor",
+          subject: {:user, "alice"}
+        }
       ])
 
       :ok
@@ -129,13 +142,22 @@ defmodule ZevalCore.CheckTest do
 
       # doc:readme has parent folder:eng
       Tuples.write(tid, [
-        %Tuple{namespace: "doc", object_id: "readme", relation: "parent",
-          subject: {:userset, "folder", "eng", "member"}}
+        %Tuple{
+          namespace: "doc",
+          object_id: "readme",
+          relation: "parent",
+          subject: {:userset, "folder", "eng", "member"}
+        }
       ])
 
       # alice is a viewer of folder:eng
       Tuples.write(tid, [
-        %Tuple{namespace: "folder", object_id: "eng", relation: "viewer", subject: {:user, "alice"}}
+        %Tuple{
+          namespace: "folder",
+          object_id: "eng",
+          relation: "viewer",
+          subject: {:user, "alice"}
+        }
       ])
 
       :ok
@@ -345,19 +367,32 @@ defmodule ZevalCore.CheckTest do
 
       # alice is member of group:eng
       Tuples.write(tid, [
-        %Tuple{namespace: "group", object_id: "eng", relation: "member", subject: {:user, "alice"}}
+        %Tuple{
+          namespace: "group",
+          object_id: "eng",
+          relation: "member",
+          subject: {:user, "alice"}
+        }
       ])
 
       # folder:project has parent group:eng — so members of eng are viewers of project
       Tuples.write(tid, [
-        %Tuple{namespace: "folder", object_id: "project", relation: "parent",
-          subject: {:userset, "group", "eng", "member"}}
+        %Tuple{
+          namespace: "folder",
+          object_id: "project",
+          relation: "parent",
+          subject: {:userset, "group", "eng", "member"}
+        }
       ])
 
       # doc:readme has parent folder:project — so viewers of project are viewers of readme
       Tuples.write(tid, [
-        %Tuple{namespace: "doc", object_id: "readme", relation: "parent",
-          subject: {:userset, "folder", "project", "member"}}
+        %Tuple{
+          namespace: "doc",
+          object_id: "readme",
+          relation: "parent",
+          subject: {:userset, "folder", "project", "member"}
+        }
       ])
 
       :ok
@@ -393,18 +428,19 @@ defmodule ZevalCore.CheckTest do
       # Self-referential tuple_to_userset: doc:viewer resolves by finding
       # parent tuples and checking viewer on each parent. If a tuple's
       # parent is itself, we get a runtime cycle.
-      write_result = Namespace.write(tid, %{
-        "name" => "doc",
-        "relations" => %{
-          "viewer" => %{
-            "tuple_to_userset" => %{
-              "tupleset_relation" => "parent",
-              "computed_userset_relation" => "viewer"
-            }
-          },
-          "parent" => %{"this" => %{}}
-        }
-      })
+      write_result =
+        Namespace.write(tid, %{
+          "name" => "doc",
+          "relations" => %{
+            "viewer" => %{
+              "tuple_to_userset" => %{
+                "tupleset_relation" => "parent",
+                "computed_userset_relation" => "viewer"
+              }
+            },
+            "parent" => %{"this" => %{}}
+          }
+        })
 
       assert {:ok, _} = write_result, "write failed: #{inspect(write_result)}"
 
@@ -412,19 +448,23 @@ defmodule ZevalCore.CheckTest do
       # This creates a runtime cycle because resolving viewer on doc:x
       # will look at parent tuples, find this one, and recurse on doc:x#viewer
       Tuples.write(tid, [
-        %Tuple{namespace: "doc", object_id: "x", relation: "parent",
-          subject: {:userset, "doc", "x", "viewer"}}
+        %Tuple{
+          namespace: "doc",
+          object_id: "x",
+          relation: "parent",
+          subject: {:userset, "doc", "x", "viewer"}
+        }
       ])
 
       :ok
     end
 
     test "returns false with cycle in path on runtime cycle", %{tenant_id: tid} do
-          assert {:ok, _} = Namespace.get(tid, "doc"), "config not found"
-          result = Check.check(tid, "doc", "x", "viewer", {:user, "alice"})
-          assert result.allowed == false
-          path_rules = Enum.map(result.path, & &1.rule)
-          assert "cycle" in path_rules
+      assert {:ok, _} = Namespace.get(tid, "doc"), "config not found"
+      result = Check.check(tid, "doc", "x", "viewer", {:user, "alice"})
+      assert result.allowed == false
+      path_rules = Enum.map(result.path, & &1.rule)
+      assert "cycle" in path_rules
     end
   end
 

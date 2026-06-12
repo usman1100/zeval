@@ -27,7 +27,8 @@ defmodule ZevalWeb.Telemetry do
       ),
 
       # Check engine metrics
-      counter("zeval.check.count", tags: [:allowed],
+      counter("zeval.check.count",
+        tags: [:allowed],
         description: "Total authorization checks"
       ),
       distribution("zeval.check.duration",
@@ -40,15 +41,18 @@ defmodule ZevalWeb.Telemetry do
       last_value("zeval.check.depth", tags: []),
 
       # Tuple store metrics
-      counter("zeval.tuples.written.count", tags: [],
+      counter("zeval.tuples.written.count",
+        tags: [],
         description: "Total tuples written"
       ),
-      counter("zeval.tuples.deleted.count", tags: [],
+      counter("zeval.tuples.deleted.count",
+        tags: [],
         description: "Total tuples soft-deleted"
       ),
 
       # Endpoint request count
-      counter("phoenix.endpoint.request_count", tags: [:request_path],
+      counter("phoenix.endpoint.request_count",
+        tags: [:request_path],
         description: "Total HTTP requests by path"
       )
     ]

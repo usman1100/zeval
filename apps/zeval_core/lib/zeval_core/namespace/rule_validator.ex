@@ -34,21 +34,28 @@ defmodule ZevalCore.Namespace.RuleValidator do
     {:error, "\"computed_userset\" expects {\"relation\": \"<name>\"}"}
   end
 
-  def validate(%{"tuple_to_userset" => %{
-    "tupleset_relation" => ts_rel,
-    "computed_userset_relation" => cu_rel
-  }}) when is_binary(ts_rel) and is_binary(cu_rel) do
-    {:ok, %{
-      "tuple_to_userset" => %{
-        "tupleset_relation" => ts_rel,
-        "computed_userset_relation" => cu_rel
-      }
-    }}
+  def validate(%{
+        "tuple_to_userset" => %{
+          "tupleset_relation" => ts_rel,
+          "computed_userset_relation" => cu_rel
+        }
+      })
+      when is_binary(ts_rel) and is_binary(cu_rel) do
+    {:ok,
+     %{
+       "tuple_to_userset" => %{
+         "tupleset_relation" => ts_rel,
+         "computed_userset_relation" => cu_rel
+       }
+     }}
   end
 
   def validate(%{"tuple_to_userset" => _}) do
-    {:error, "\"tuple_to_userset\" expects {\"tupleset_relation\": \"...\", \"computed_userset_relation\": \"...\"}"}
+    {:error,
+     "\"tuple_to_userset\" expects {\"tupleset_relation\": \"...\", \"computed_userset_relation\": \"...\"}"}
   end
+
+  def validate(%{"union" => []}), do: {:error, "\"union\" requires at least one child rule"}
 
   def validate(%{"union" => children}) when is_list(children) do
     validate_children(children, "union")
@@ -57,6 +64,9 @@ defmodule ZevalCore.Namespace.RuleValidator do
   def validate(%{"union" => _}) do
     {:error, "\"union\" expects a list of child rules"}
   end
+
+  def validate(%{"intersection" => []}),
+    do: {:error, "\"intersection\" requires at least one child rule"}
 
   def validate(%{"intersection" => children}) when is_list(children) do
     validate_children(children, "intersection")
@@ -87,11 +97,11 @@ defmodule ZevalCore.Namespace.RuleValidator do
 
   defp validate_children(children, type) when is_list(children) do
     case Enum.reduce_while(children, {:ok, []}, fn child, {:ok, acc} ->
-      case validate(child) do
-        {:ok, validated} -> {:cont, {:ok, [validated | acc]}}
-        {:error, reason} -> {:halt, {:error, "#{type}: #{reason}"}}
-      end
-    end) do
+           case validate(child) do
+             {:ok, validated} -> {:cont, {:ok, [validated | acc]}}
+             {:error, reason} -> {:halt, {:error, "#{type}: #{reason}"}}
+           end
+         end) do
       {:ok, reversed} -> {:ok, %{type => Enum.reverse(reversed)}}
       {:error, _} = err -> err
     end
@@ -110,7 +120,8 @@ defmodule ZevalCore.Namespace.RuleValidator do
     end
   end
 
-  def validate_config(_), do: {:error, "config must have \"name\" (string) and \"relations\" (object)"}
+  def validate_config(_),
+    do: {:error, "config must have \"name\" (string) and \"relations\" (object)"}
 
   defp validate_relations(relations) when is_map(relations) do
     Enum.reduce_while(relations, {:ok, %{}}, fn {rel_name, rule}, {:ok, acc} ->
@@ -138,16 +149,23 @@ defmodule ZevalCore.Namespace.RuleValidator do
       {:cycle, cycle_path} ->
         cycle_str = Enum.join(cycle_path, " -> ")
         {:error, "circular computed_userset reference detected: #{cycle_str}"}
+
       :ok ->
         :ok
     end
   end
 
   defp computed_userset_targets(%{"computed_userset" => %{"relation" => rel}}), do: [rel]
-  defp computed_userset_targets(%{"union" => children}), do: Enum.flat_map(children, &computed_userset_targets/1)
-  defp computed_userset_targets(%{"intersection" => children}), do: Enum.flat_map(children, &computed_userset_targets/1)
+
+  defp computed_userset_targets(%{"union" => children}),
+    do: Enum.flat_map(children, &computed_userset_targets/1)
+
+  defp computed_userset_targets(%{"intersection" => children}),
+    do: Enum.flat_map(children, &computed_userset_targets/1)
+
   defp computed_userset_targets(%{"exclusion" => %{"base" => b, "subtract" => s}}),
     do: computed_userset_targets(b) ++ computed_userset_targets(s)
+
   defp computed_userset_targets(_), do: []
 
   # Standard cycle detection: color-based DFS
@@ -158,7 +176,9 @@ defmodule ZevalCore.Namespace.RuleValidator do
       dfs_cached(edges, visited, rest)
     else
       case dfs_visit(edges, visited, node, [node]) do
-        {:cycle, _} = cycle -> cycle
+        {:cycle, _} = cycle ->
+          cycle
+
         new_visited ->
           dfs_cached(edges, new_visited, rest)
       end

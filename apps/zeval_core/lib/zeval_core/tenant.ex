@@ -7,7 +7,7 @@ defmodule ZevalCore.Tenant do
 
   @primary_key {:id, :binary_id, autogenerate: true}
   schema "tenants" do
-    field :name, :string
+    field(:name, :string)
     timestamps(type: :utc_datetime_usec, inserted_at: :inserted_at, updated_at: false)
   end
 

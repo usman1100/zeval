@@ -8,12 +8,13 @@ defmodule ZevalCore.Tuples.Zookie do
 
   use Ecto.Schema
   import Ecto.Changeset
+  import Ecto.Query, only: [from: 2]
   alias ZevalCore.Repo
 
   @primary_key {:token, :string, []}
   schema "zookies" do
-    field :tenant_id, :binary_id
-    field :snapshot_at, :utc_datetime_usec
+    field(:tenant_id, :binary_id)
+    field(:snapshot_at, :utc_datetime_usec)
   end
 
   @doc """
@@ -23,6 +24,7 @@ defmodule ZevalCore.Tuples.Zookie do
   @spec mint(binary()) :: {:ok, %__MODULE__{}}
   def mint(tenant_id) do
     token = "zookie:#{Ecto.UUID.generate()}"
+
     %Postgrex.Result{rows: [[%DateTime{} = now]]} =
       Repo.query!("SELECT NOW()", [])
 
@@ -61,15 +63,21 @@ defmodule ZevalCore.Tuples.Zookie do
   end
 
   @doc """
-  Returns the `snapshot_at` timestamp from a zookie token.
-  Used in read queries to filter by consistency.
-  Returns `nil` if the zookie doesn't exist.
+  Returns the `snapshot_at` timestamp from a zookie token, scoped to a tenant.
+
+  A zookie is only honored for the tenant that minted it — otherwise a token
+  from tenant A could be used to pick a read snapshot in tenant B. Returns
+  `nil` if the token doesn't exist for this tenant.
   """
-  @spec snapshot_at(binary()) :: DateTime.t() | nil
-  def snapshot_at(token) do
-    case decode(token) do
-      nil -> nil
-      %__MODULE__{snapshot_at: snap} -> snap
-    end
+  @spec snapshot_at(binary(), binary()) :: DateTime.t() | nil
+  def snapshot_at(token, tenant_id) when is_binary(token) and is_binary(tenant_id) do
+    Repo.one(
+      from(z in __MODULE__,
+        where: z.token == ^token and z.tenant_id == ^tenant_id,
+        select: z.snapshot_at
+      )
+    )
   end
+
+  def snapshot_at(_, _), do: nil
 end

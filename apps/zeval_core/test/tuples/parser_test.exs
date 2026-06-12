@@ -93,5 +93,20 @@ defmodule ZevalCore.Tuples.ParserTest do
       assert {:error, msg} = Parser.parse("doc:readme#viewer@group:eng")
       assert msg =~ "#"
     end
+
+    test "rejects an uppercase namespace" do
+      assert {:error, msg} = Parser.parse("Doc:readme#viewer@alice")
+      assert msg =~ "namespace"
+    end
+
+    test "rejects a namespace with illegal characters" do
+      assert {:error, _} = Parser.parse("do c:readme#viewer@alice")
+    end
+
+    test "rejects an over-long object id" do
+      long = String.duplicate("a", 300)
+      assert {:error, msg} = Parser.parse("doc:#{long}#viewer@alice")
+      assert msg =~ "object_id"
+    end
   end
 end

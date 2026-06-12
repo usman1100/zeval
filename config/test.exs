@@ -14,3 +14,9 @@ config :zeval_web, ZevalWeb.Endpoint,
   secret_key_base: "test_secret_key_base_do_not_use_in_production_min_64_bytes_long_xxxx"
 
 config :logger, :default_handler, level: :warning
+
+# Static token for the tenant-bootstrap endpoint in tests.
+config :zeval_web, :admin_bootstrap_token, "test-bootstrap-token"
+
+# Run owned connections through the SQL sandbox in tests.
+config :zeval_web, sql_sandbox: true

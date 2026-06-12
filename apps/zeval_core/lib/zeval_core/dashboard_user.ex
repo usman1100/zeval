@@ -12,10 +12,10 @@ defmodule ZevalCore.DashboardUser do
   @primary_key {:id, :binary_id, autogenerate: true}
 
   schema "dashboard_users" do
-    field :email, :string
-    field :name, :string
-    field :password_hash, :string
-    field :password, :string, virtual: true
+    field(:email, :string)
+    field(:name, :string)
+    field(:password_hash, :string)
+    field(:password, :string, virtual: true)
 
     timestamps(type: :utc_datetime_usec, inserted_at: :inserted_at, updated_at: false)
   end
@@ -26,7 +26,7 @@ defmodule ZevalCore.DashboardUser do
     |> validate_required([:email, :name, :password])
     |> validate_length(:email, max: 255)
     |> validate_format(:email, ~r/^[^\s@]+@[^\s@]+\.[^\s@]+$/)
-    |> validate_length(:password, min: 8)
+    |> validate_length(:password, min: 12, max: 200)
     |> unique_constraint(:email)
     |> hash_password()
   end

@@ -1,91 +1,104 @@
 defmodule ZevalWeb.DashboardLive.NamespaceEditorLive do
   use ZevalWeb, :live_view
-  import ZevalWeb.DashboardLive.Sidebar, only: [dashboard_layout: 1]
   import Phoenix.Component
 
-  alias ZevalCore.{Repo, Namespace, Tenants}
-  alias ZevalCore.Namespace.{NamespaceConfig, RuleValidator}
+  alias ZevalCore.{Namespace, Tenants, Memberships}
+  alias ZevalCore.Namespace.RuleValidator
+  alias ZevalWeb.ChangesetError
 
-  def mount(%{"id" => id}, session, socket) do
-    ns = Repo.get!(NamespaceConfig, id)
-    form = config_to_form(ns.name, ns.config, ns.tenant_id)
-    {:ok, assign(socket,
-      current_user: %{email: session["current_user_email"], name: session["current_user_name"]},
-      mode: :visual,
-      namespace_name: ns.name,
-      tenant_id: ns.tenant_id,
-      relations: form.relations,
-      json_text: Jason.encode!(ns.config, pretty: true),
-      error: nil,
-      saved: false,
-      tenants: Tenants.list()
-    )}
+  def mount(%{"id" => id}, _session, socket) do
+    user_id = socket.assigns.current_user.id
+
+    case Namespace.get_record_for_user(user_id, id) do
+      nil ->
+        {:ok,
+         socket
+         |> put_flash(:error, "Namespace not found")
+         |> redirect(to: "/dashboard/namespaces")}
+
+      ns ->
+        form = config_to_form(ns.name, ns.config, ns.tenant_id)
+
+        {:ok,
+         assign(socket,
+           active: "namespaces",
+           page_title: "Zeval Engine — Edit #{ns.name}",
+           mode: :visual,
+           namespace_name: ns.name,
+           tenant_id: ns.tenant_id,
+           relations: form.relations,
+           json_text: Jason.encode!(ns.config, pretty: true),
+           error: nil,
+           saved: false,
+           tenants: Tenants.list_for_user(user_id)
+         )}
+    end
   end
 
-  def mount(_params, session, socket) do
-    {:ok, assign(socket,
-      current_user: %{email: session["current_user_email"], name: session["current_user_name"]},
-      mode: :visual,
-      namespace_name: "",
-      tenant_id: "",
-      relations: [],
-      json_text: ~s({\n  "name": "",\n  "relations": {}\n}),
-      error: nil,
-      saved: false,
-      tenants: Tenants.list()
-    )}
+  def mount(_params, _session, socket) do
+    {:ok,
+     assign(socket,
+       active: "namespaces",
+       page_title: "Zeval Engine — New Namespace",
+       mode: :visual,
+       namespace_name: "",
+       tenant_id: "",
+       relations: [],
+       json_text: ~s({\n  "name": "",\n  "relations": {}\n}),
+       error: nil,
+       saved: false,
+       tenants: Tenants.list_for_user(socket.assigns.current_user.id)
+     )}
   end
 
   def render(assigns) do
     ~H"""
-    <.dashboard_layout page_title="Zeval Engine — Namespace Editor" current_user={@current_user} active="namespaces">
-
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="text-2xl font-bold text-white">
-          <%= if @namespace_name == "", do: "New Namespace", else: "Edit: #{@namespace_name}" %>
-        </h2>
-        <div class="flex gap-2">
-          <button phx-click="switch_mode"
-            class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium">
-            <%= if @mode == :visual, do: "Switch to JSON", else: "Switch to Visual" %>
-          </button>
-        </div>
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-2xl font-bold text-white">
+        <%= if @namespace_name == "", do: "New Namespace", else: "Edit: #{@namespace_name}" %>
+      </h2>
+      <div class="flex gap-2">
+        <button
+          phx-click="switch_mode"
+          class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
+        >
+          <%= if @mode == :visual, do: "Switch to JSON", else: "Switch to Visual" %>
+        </button>
       </div>
+    </div>
 
-      <%= if @error do %>
-        <div class="bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-lg mb-4 text-sm"><%= @error %></div>
-      <% end %>
+    <%= if @error do %>
+      <div class="bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-lg mb-4 text-sm">{@error}</div>
+    <% end %>
 
-      <%= if @saved do %>
-        <div class="bg-green-900/50 border border-green-700 text-green-300 px-4 py-3 rounded-lg mb-4 text-sm">
-          Namespace saved successfully!
-          <a href="/dashboard/namespaces" class="underline ml-2">Back to list</a>
-        </div>
-      <% end %>
+    <%= if @saved do %>
+      <div class="bg-green-900/50 border border-green-700 text-green-300 px-4 py-3 rounded-lg mb-4 text-sm">
+        Namespace saved successfully!
+        <a href="/dashboard/namespaces" class="underline ml-2">Back to list</a>
+      </div>
+    <% end %>
 
-      <%= if @mode == :visual do %>
-        <.visual_editor
-          namespace_name={@namespace_name}
-          tenant_id={@tenant_id}
-          tenants={@tenants}
-          relations={@relations}
-          saved={@saved}
-        />
-      <% else %>
-        <.json_editor json_text={@json_text} saved={@saved} />
-      <% end %>
+    <%= if @mode == :visual do %>
+      <.visual_editor
+        namespace_name={@namespace_name}
+        tenant_id={@tenant_id}
+        tenants={@tenants}
+        relations={@relations}
+        saved={@saved}
+      />
+    <% else %>
+      <.json_editor json_text={@json_text} saved={@saved} />
+    <% end %>
 
-      <form id="editor-form"></form>
-
-    </.dashboard_layout>
+    <form id="editor-form"></form>
     """
   end
 
-  attr :namespace_name, :string, required: true
-  attr :tenant_id, :string, required: true
-  attr :tenants, :list, required: true
-  attr :relations, :list, required: true
-  attr :saved, :boolean, required: true
+  attr(:namespace_name, :string, required: true)
+  attr(:tenant_id, :string, required: true)
+  attr(:tenants, :list, required: true)
+  attr(:relations, :list, required: true)
+  attr(:saved, :boolean, required: true)
 
   def visual_editor(assigns) do
     ~H"""
@@ -145,7 +158,7 @@ defmodule ZevalWeb.DashboardLive.NamespaceEditorLive do
     """
   end
 
-  attr :rel, :map, required: true
+  attr(:rel, :map, required: true)
 
   def relation_card(assigns) do
     ~H"""
@@ -166,8 +179,8 @@ defmodule ZevalWeb.DashboardLive.NamespaceEditorLive do
     """
   end
 
-  attr :rule, :map, required: true
-  attr :depth, :integer, required: true
+  attr(:rule, :map, required: true)
+  attr(:depth, :integer, required: true)
 
   def rule_block(assigns) do
     ~H"""
@@ -234,10 +247,10 @@ defmodule ZevalWeb.DashboardLive.NamespaceEditorLive do
     """
   end
 
-  attr :rule_id, :string, required: true
-  attr :param, :string, required: true
-  attr :value, :string, default: ""
-  attr :label, :string, required: true
+  attr(:rule_id, :string, required: true)
+  attr(:param, :string, required: true)
+  attr(:value, :string, default: "")
+  attr(:label, :string, required: true)
 
   def param_input(assigns) do
     ~H"""
@@ -251,8 +264,8 @@ defmodule ZevalWeb.DashboardLive.NamespaceEditorLive do
     """
   end
 
-  attr :json_text, :string, required: true
-  attr :saved, :boolean, required: true
+  attr(:json_text, :string, required: true)
+  attr(:saved, :boolean, required: true)
 
   def json_editor(assigns) do
     ~H"""
@@ -281,25 +294,31 @@ defmodule ZevalWeb.DashboardLive.NamespaceEditorLive do
         config = form_to_config(socket.assigns)
         json = Jason.encode!(config, pretty: true)
         {:noreply, assign(socket, mode: :json, json_text: json)}
+
       :json ->
         case Jason.decode(socket.assigns.json_text) do
           {:ok, config} ->
             case RuleValidator.validate_config(config) do
               {:ok, _} ->
-                form = config_to_form(
-                  config["name"] || "",
-                  config,
-                  socket.assigns.tenant_id
-                )
-                {:noreply, assign(socket,
-                  mode: :visual,
-                  namespace_name: config["name"] || "",
-                  relations: form.relations,
-                  error: nil
-                )}
+                form =
+                  config_to_form(
+                    config["name"] || "",
+                    config,
+                    socket.assigns.tenant_id
+                  )
+
+                {:noreply,
+                 assign(socket,
+                   mode: :visual,
+                   namespace_name: config["name"] || "",
+                   relations: form.relations,
+                   error: nil
+                 )}
+
               {:error, reason} ->
                 {:noreply, assign(socket, error: reason)}
             end
+
           {:error, _} ->
             {:noreply, assign(socket, error: "Invalid JSON")}
         end
@@ -318,8 +337,16 @@ defmodule ZevalWeb.DashboardLive.NamespaceEditorLive do
     rel = %{
       id: Ecto.UUID.generate(),
       name: "",
-      rule: %{id: Ecto.UUID.generate(), type: "this", params: %{}, children: [], base: nil, subtract: nil}
+      rule: %{
+        id: Ecto.UUID.generate(),
+        type: "this",
+        params: %{},
+        children: [],
+        base: nil,
+        subtract: nil
+      }
     }
+
     {:noreply, assign(socket, relations: socket.assigns.relations ++ [rel])}
   end
 
@@ -329,9 +356,11 @@ defmodule ZevalWeb.DashboardLive.NamespaceEditorLive do
   end
 
   def handle_event("set_relation_name", %{"rel-id" => rel_id, "value" => name}, socket) do
-    rels = Enum.map(socket.assigns.relations, fn r ->
-      if r.id == rel_id, do: %{r | name: name}, else: r
-    end)
+    rels =
+      Enum.map(socket.assigns.relations, fn r ->
+        if r.id == rel_id, do: %{r | name: name}, else: r
+      end)
+
     {:noreply, assign(socket, relations: rels)}
   end
 
@@ -339,40 +368,69 @@ defmodule ZevalWeb.DashboardLive.NamespaceEditorLive do
     updater = fn rule ->
       base =
         if type == "exclusion" do
-          %{id: Ecto.UUID.generate(), type: "this", params: %{}, children: [], base: nil, subtract: nil}
+          %{
+            id: Ecto.UUID.generate(),
+            type: "this",
+            params: %{},
+            children: [],
+            base: nil,
+            subtract: nil
+          }
         else
           nil
         end
 
       subtract =
         if type == "exclusion" do
-          %{id: Ecto.UUID.generate(), type: "this", params: %{}, children: [], base: nil, subtract: nil}
+          %{
+            id: Ecto.UUID.generate(),
+            type: "this",
+            params: %{},
+            children: [],
+            base: nil,
+            subtract: nil
+          }
         else
           nil
         end
 
-      %{rule |
-        type: type,
-        params: %{},
-        children: if(type in ["union", "intersection"], do: [], else: rule.children || []),
-        base: base,
-        subtract: subtract
+      %{
+        rule
+        | type: type,
+          params: %{},
+          children: if(type in ["union", "intersection"], do: [], else: rule.children || []),
+          base: base,
+          subtract: subtract
       }
     end
+
     rels = update_rule_in_relations(socket.assigns.relations, rule_id, updater)
     {:noreply, assign(socket, relations: rels)}
   end
 
-  def handle_event("rule_set_param", %{"rule-id" => rule_id, "param" => param, "value" => value}, socket) do
+  def handle_event(
+        "rule_set_param",
+        %{"rule-id" => rule_id, "param" => param, "value" => value},
+        socket
+      ) do
     updater = fn rule ->
       %{rule | params: Map.put(rule.params || %{}, param, value)}
     end
+
     rels = update_rule_in_relations(socket.assigns.relations, rule_id, updater)
     {:noreply, assign(socket, relations: rels)}
   end
 
   def handle_event("rule_add_child", %{"rule-id" => rule_id}, socket) do
-    child = %{id: Ecto.UUID.generate(), type: "this", params: %{}, children: [], base: nil, subtract: nil}
+    child = %{
+      id: Ecto.UUID.generate(),
+      type: "this",
+      params: %{},
+      children: [],
+      base: nil,
+      subtract: nil
+    }
+
     updater = fn rule ->
       if rule.type in ["union", "intersection"] do
         %{rule | children: rule.children ++ [child]}
@@ -380,17 +438,23 @@ defmodule ZevalWeb.DashboardLive.NamespaceEditorLive do
         rule
       end
     end
+
     rels = update_rule_in_relations(socket.assigns.relations, rule_id, updater)
     {:noreply, assign(socket, relations: rels)}
   end
 
-  def handle_event("rule_remove_child", %{"rule-id" => child_id, "parent-id" => parent_id}, socket) do
+  def handle_event(
+        "rule_remove_child",
+        %{"rule-id" => child_id, "parent-id" => parent_id},
+        socket
+      ) do
     updater = fn rule ->
       rule
       |> Map.put(:children, Enum.reject(rule.children || [], fn c -> c.id == child_id end))
       |> Map.update(:base, nil, fn b -> if b && b.id == child_id, do: nil, else: b end)
       |> Map.update(:subtract, nil, fn s -> if s && s.id == child_id, do: nil, else: s end)
     end
+
     rels = update_rule_in_relations(socket.assigns.relations, parent_id, updater)
     {:noreply, assign(socket, relations: rels)}
   end
@@ -398,17 +462,16 @@ defmodule ZevalWeb.DashboardLive.NamespaceEditorLive do
   def handle_event("save", _, socket) do
     %{namespace_name: name, tenant_id: tid, relations: rels} = socket.assigns
 
-    if name == "" or tid == "" do
-      {:noreply, assign(socket, error: "Namespace name and tenant are required")}
-    else
-      config = form_to_config(%{namespace_name: name, relations: rels})
-      case Namespace.write(tid, config) do
-        {:ok, _ns} ->
-          {:noreply, assign(socket, saved: true, error: nil)}
-        {:error, changeset} ->
-          msg = hd(hd(Ecto.Changeset.traverse_errors(changeset, fn {m, _} -> m end) |> Map.values()))
-          {:noreply, assign(socket, error: msg)}
-      end
+    cond do
+      name == "" or tid == "" ->
+        {:noreply, assign(socket, error: "Namespace name and tenant are required")}
+
+      not Memberships.member?(socket.assigns.current_user.id, tid) ->
+        {:noreply, assign(socket, error: "You do not have access to that tenant")}
+
+      true ->
+        config = form_to_config(%{namespace_name: name, relations: rels})
+        save_config(socket, tid, config)
     end
   end
 
@@ -422,9 +485,11 @@ defmodule ZevalWeb.DashboardLive.NamespaceEditorLive do
         case RuleValidator.validate_config(config) do
           {:ok, _} ->
             {:noreply, assign(socket, error: nil)}
+
           {:error, reason} ->
             {:noreply, assign(socket, error: reason)}
         end
+
       {:error, _} ->
         {:noreply, assign(socket, error: "Invalid JSON")}
     end
@@ -434,19 +499,36 @@ defmodule ZevalWeb.DashboardLive.NamespaceEditorLive do
     case Jason.decode(socket.assigns.json_text) do
       {:ok, config} ->
         tid = socket.assigns.tenant_id
-        if tid == "" do
-          {:noreply, assign(socket, error: "Select a tenant first (switch to Visual mode)" )}
-        else
-          case Namespace.write(tid, config) do
-            {:ok, _ns} ->
-              {:noreply, assign(socket, saved: true, error: nil)}
-            {:error, changeset} ->
-              msg = hd(hd(Ecto.Changeset.traverse_errors(changeset, fn {m, _} -> m end) |> Map.values()))
-              {:noreply, assign(socket, error: msg)}
-          end
+
+        cond do
+          tid == "" ->
+            {:noreply, assign(socket, error: "Select a tenant first (switch to Visual mode)")}
+
+          not Memberships.member?(socket.assigns.current_user.id, tid) ->
+            {:noreply, assign(socket, error: "You do not have access to that tenant")}
+
+          true ->
+            save_config(socket, tid, config)
         end
+
       {:error, _} ->
         {:noreply, assign(socket, error: "Invalid JSON")}
+    end
+  end
+
+  defp save_config(socket, tid, config) do
+    case Namespace.write(tid, config) do
+      {:ok, _ns} ->
+        {:noreply, assign(socket, saved: true, error: nil)}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply, assign(socket, error: ChangesetError.first(changeset))}
+
+      {:error, reason} when is_binary(reason) ->
+        {:noreply, assign(socket, error: reason)}
+
+      {:error, _} ->
+        {:noreply, assign(socket, error: "Could not save namespace")}
     end
   end
 
@@ -465,24 +547,58 @@ defmodule ZevalWeb.DashboardLive.NamespaceEditorLive do
   end
 
   defp rule_to_form(%{"computed_userset" => %{"relation" => rel}}) do
-    %{id: Ecto.UUID.generate(), type: "computed_userset", params: %{"relation" => rel}, children: [], base: nil, subtract: nil}
+    %{
+      id: Ecto.UUID.generate(),
+      type: "computed_userset",
+      params: %{"relation" => rel},
+      children: [],
+      base: nil,
+      subtract: nil
+    }
   end
 
   defp rule_to_form(%{"tuple_to_userset" => params}) do
-    %{id: Ecto.UUID.generate(), type: "tuple_to_userset", params: params, children: [], base: nil, subtract: nil}
+    %{
+      id: Ecto.UUID.generate(),
+      type: "tuple_to_userset",
+      params: params,
+      children: [],
+      base: nil,
+      subtract: nil
+    }
   end
 
   defp rule_to_form(%{"union" => children}) do
-    %{id: Ecto.UUID.generate(), type: "union", params: %{}, children: Enum.map(children, &rule_to_form/1), base: nil, subtract: nil}
+    %{
+      id: Ecto.UUID.generate(),
+      type: "union",
+      params: %{},
+      children: Enum.map(children, &rule_to_form/1),
+      base: nil,
+      subtract: nil
+    }
   end
 
   defp rule_to_form(%{"intersection" => children}) do
-    %{id: Ecto.UUID.generate(), type: "intersection", params: %{}, children: Enum.map(children, &rule_to_form/1), base: nil, subtract: nil}
+    %{
+      id: Ecto.UUID.generate(),
+      type: "intersection",
+      params: %{},
+      children: Enum.map(children, &rule_to_form/1),
+      base: nil,
+      subtract: nil
+    }
   end
 
   defp rule_to_form(%{"exclusion" => %{"base" => base, "subtract" => subtract}}) do
-    %{id: Ecto.UUID.generate(), type: "exclusion", params: %{}, children: [],
-      base: rule_to_form(base), subtract: rule_to_form(subtract)}
+    %{
+      id: Ecto.UUID.generate(),
+      type: "exclusion",
+      params: %{},
+      children: [],
+      base: rule_to_form(base),
+      subtract: rule_to_form(subtract)
+    }
   end
 
   defp rule_to_form(_unknown) do
@@ -508,10 +624,12 @@ defmodule ZevalWeb.DashboardLive.NamespaceEditorLive do
   end
 
   defp rule_to_config(%{type: "tuple_to_userset", params: params}) do
-    %{"tuple_to_userset" => %{
-      "tupleset_relation" => Map.get(params, "tupleset_relation", ""),
-      "computed_userset_relation" => Map.get(params, "computed_userset_relation", "")
-    }}
+    %{
+      "tuple_to_userset" => %{
+        "tupleset_relation" => Map.get(params, "tupleset_relation", ""),
+        "computed_userset_relation" => Map.get(params, "computed_userset_relation", "")
+      }
+    }
   end
 
   defp rule_to_config(%{type: "union", children: children}) do
@@ -523,10 +641,12 @@ defmodule ZevalWeb.DashboardLive.NamespaceEditorLive do
   end
 
   defp rule_to_config(%{type: "exclusion", base: base, subtract: subtract}) do
-    %{"exclusion" => %{
-      "base" => rule_to_config(base),
-      "subtract" => rule_to_config(subtract)
-    }}
+    %{
+      "exclusion" => %{
+        "base" => rule_to_config(base),
+        "subtract" => rule_to_config(subtract)
+      }
+    }
   end
 
   defp update_rule_in_relations(relations, rule_id, updater) do

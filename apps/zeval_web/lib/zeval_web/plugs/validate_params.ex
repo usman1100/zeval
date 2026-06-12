@@ -9,9 +9,9 @@ defmodule ZevalWeb.Plugs.ValidateParams do
   import Plug.Conn
 
   @namespace_regex ~r/^[a-z][a-z0-9_]{0,63}$/
-  @relation_regex  ~r/^[a-z][a-z0-9_]{0,63}$/
+  @relation_regex ~r/^[a-z][a-z0-9_]{0,63}$/
   @object_id_regex ~r/^[a-zA-Z0-9_\-\.]{1,256}$/
-  @user_id_regex   ~r/^[a-zA-Z0-9_\-\.@]{1,256}$/
+  @user_id_regex ~r/^[a-zA-Z0-9_\-\.@]{1,256}$/
 
   def init(opts), do: opts
 
@@ -29,17 +29,26 @@ defmodule ZevalWeb.Plugs.ValidateParams do
       {:error, field, msg} ->
         conn
         |> put_resp_content_type("application/json")
-        |> send_resp(400, Jason.encode!(%{error: "invalid #{field}: #{msg}", code: "validation_error"}))
+        |> send_resp(
+          400,
+          Jason.encode!(%{error: "invalid #{field}: #{msg}", code: "validation_error"})
+        )
         |> halt()
     end
   end
 
   defp check_field(params, key, regex) do
     case params[key] do
-      nil -> :ok
+      nil ->
+        :ok
+
       val when is_binary(val) ->
-        if Regex.match?(regex, val), do: :ok, else: {:error, key, "does not match required pattern"}
-      _ -> :ok
+        if Regex.match?(regex, val),
+          do: :ok,
+          else: {:error, key, "does not match required pattern"}
+
+      _ ->
+        :ok
     end
   end
 end

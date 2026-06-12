@@ -126,10 +126,12 @@ defmodule ZevalCore.Expand do
   # -- tuple_to_userset -------------------------------------------------------
 
   defp expand_rule(
-         %{"tuple_to_userset" => %{
-           "tupleset_relation" => ts_rel,
-           "computed_userset_relation" => cu_rel
-         }},
+         %{
+           "tuple_to_userset" => %{
+             "tupleset_relation" => ts_rel,
+             "computed_userset_relation" => cu_rel
+           }
+         },
          state,
          ns,
          obj,
@@ -224,7 +226,13 @@ defmodule ZevalCore.Expand do
 
   # -- exclusion --------------------------------------------------------------
 
-  defp expand_rule(%{"exclusion" => %{"base" => base, "subtract" => subtract}}, state, ns, obj, rel) do
+  defp expand_rule(
+         %{"exclusion" => %{"base" => base, "subtract" => subtract}},
+         state,
+         ns,
+         obj,
+         rel
+       ) do
     base_tree = expand_rule(base, state, ns, obj, rel)
     subtract_tree = expand_rule(subtract, state, ns, obj, rel)
 

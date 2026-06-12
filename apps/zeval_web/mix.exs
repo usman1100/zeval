@@ -11,9 +11,13 @@ defmodule ZevalWeb.MixProject do
       lockfile: "../../mix.lock",
       elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
+      elixirc_paths: elixirc_paths(Mix.env()),
       deps: deps()
     ]
   end
+
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
 
   def application do
     [
@@ -45,7 +49,8 @@ defmodule ZevalWeb.MixProject do
 
       # Test-only
       {:stream_data, "~> 1.1", only: :test},
-      {:ex_machina, "~> 2.8", only: :test}
+      {:ex_machina, "~> 2.8", only: :test},
+      {:lazy_html, ">= 0.1.0", only: :test}
     ]
   end
 end

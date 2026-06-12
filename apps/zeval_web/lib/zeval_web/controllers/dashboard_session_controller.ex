@@ -3,16 +3,20 @@ defmodule ZevalWeb.DashboardSessionController do
 
   alias ZevalCore.DashboardUsers
 
-  plug :redirect_if_logged_in when action in [:new, :create, :signup_new, :signup_create]
+  plug(:redirect_if_logged_in when action in [:new, :create, :signup_new, :signup_create])
 
   # -- Login --
 
+  # Static markup; the only dynamic value (error message) is HTML-escaped in
+  # error_html/1 and the CSRF token is generated server-side.
+  # sobelow_skip ["XSS.SendResp"]
   def new(conn, _params) do
     conn
     |> put_resp_header("content-type", "text/html; charset=utf-8")
     |> send_resp(200, login_page_html(nil))
   end
 
+  # sobelow_skip ["XSS.SendResp"]
   def create(conn, %{"email" => email, "password" => password}) do
     case DashboardUsers.authenticate(email, password) do
       {:ok, user} ->
@@ -25,6 +29,7 @@ defmodule ZevalWeb.DashboardSessionController do
     end
   end
 
+  # sobelow_skip ["XSS.SendResp"]
   def create(conn, _) do
     conn
     |> put_resp_header("content-type", "text/html; charset=utf-8")
@@ -39,12 +44,14 @@ defmodule ZevalWeb.DashboardSessionController do
 
   # -- Signup --
 
+  # sobelow_skip ["XSS.SendResp"]
   def signup_new(conn, _params) do
     conn
     |> put_resp_header("content-type", "text/html; charset=utf-8")
     |> send_resp(200, signup_page_html(nil))
   end
 
+  # sobelow_skip ["XSS.SendResp"]
   def signup_create(conn, %{"name" => name, "email" => email, "password" => password}) do
     case DashboardUsers.create(%{name: name, email: email, password: password}) do
       {:ok, user} ->
@@ -52,12 +59,14 @@ defmodule ZevalWeb.DashboardSessionController do
 
       {:error, changeset} ->
         msg = format_errors(changeset)
+
         conn
         |> put_resp_header("content-type", "text/html; charset=utf-8")
         |> send_resp(200, signup_page_html(msg))
     end
   end
 
+  # sobelow_skip ["XSS.SendResp"]
   def signup_create(conn, _) do
     conn
     |> put_resp_header("content-type", "text/html; charset=utf-8")
@@ -180,9 +189,9 @@ defmodule ZevalWeb.DashboardSessionController do
               </div>
               <div class="mb-6">
                 <label for="password" class="block text-sm font-medium text-gray-300 mb-1">Password</label>
-                <input type="password" name="password" id="password" required minlength="8"
+                <input type="password" name="password" id="password" required minlength="12"
                   class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                  placeholder="At least 8 characters" />
+                  placeholder="At least 12 characters" />
               </div>
               <button type="submit"
                 class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 rounded-lg text-sm transition-colors">
@@ -207,7 +216,11 @@ defmodule ZevalWeb.DashboardSessionController do
   defp error_html(""), do: ""
 
   defp error_html(msg) do
-    ~s(<div class="bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-lg mb-4 text-sm">#{msg}</div>)
+    # Escape the message — it can include changeset field names/values. The
+    # surrounding markup is static.
+    safe = msg |> Phoenix.HTML.html_escape() |> Phoenix.HTML.safe_to_string()
+
+    ~s(<div class="bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-lg mb-4 text-sm">#{safe}</div>)
   end
 
   defp redirect_if_logged_in(conn, _opts) do

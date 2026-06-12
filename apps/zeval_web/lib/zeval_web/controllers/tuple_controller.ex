@@ -8,19 +8,21 @@ defmodule ZevalWeb.TupleController do
   @max_tuples_per_request 500
 
   def write(conn, %{"tuples" => raw_tuples}) when is_list(raw_tuples) do
-    if length(raw_tuples) > @max_tuples_per_request do
-      ZevalWeb.JsonHelpers.bad_request(conn, "max #{@max_tuples_per_request} tuples per request")
-    else
-      tenant_id = conn.assigns.tenant_id
-      parsed = Enum.map(raw_tuples, &parse_tuple_params/1)
+    cond do
+      length(raw_tuples) > @max_tuples_per_request ->
+        ZevalWeb.JsonHelpers.bad_request(
+          conn,
+          "max #{@max_tuples_per_request} tuples per request"
+        )
 
-      case Tuples.write(tenant_id, parsed) do
-        {:ok, result} ->
+      true ->
+        with {:ok, parsed} <- parse_all(raw_tuples),
+             {:ok, result} <- Tuples.write(conn.assigns.tenant_id, parsed) do
           json(conn, %{written: result.written, zookie: result.zookie})
-
-        {:error, reason} ->
-          ZevalWeb.JsonHelpers.bad_request(conn, inspect(reason))
-      end
+        else
+          {:error, :parse, reason} -> ZevalWeb.JsonHelpers.bad_request(conn, reason)
+          {:error, _reason} -> ZevalWeb.JsonHelpers.bad_request(conn, "could not write tuples")
+        end
     end
   end
 
@@ -29,15 +31,12 @@ defmodule ZevalWeb.TupleController do
   end
 
   def delete(conn, %{"tuples" => raw_tuples}) when is_list(raw_tuples) do
-    tenant_id = conn.assigns.tenant_id
-    parsed = Enum.map(raw_tuples, &parse_tuple_params/1)
-
-    case Tuples.delete(tenant_id, parsed) do
-      {:ok, result} ->
-        json(conn, %{deleted: result.deleted, zookie: result.zookie})
-
-      {:error, reason} ->
-        ZevalWeb.JsonHelpers.bad_request(conn, inspect(reason))
+    with {:ok, parsed} <- parse_all(raw_tuples),
+         {:ok, result} <- Tuples.delete(conn.assigns.tenant_id, parsed) do
+      json(conn, %{deleted: result.deleted, zookie: result.zookie})
+    else
+      {:error, :parse, reason} -> ZevalWeb.JsonHelpers.bad_request(conn, reason)
+      {:error, _reason} -> ZevalWeb.JsonHelpers.bad_request(conn, "could not delete tuples")
     end
   end
 
@@ -72,28 +71,64 @@ defmodule ZevalWeb.TupleController do
 
   # -- Parameter parsing --
 
-  defp parse_tuple_params(%{"namespace" => ns, "object_id" => oid, "relation" => rel, "subject" => subject}) do
-    %Tuple{namespace: ns, object_id: oid, relation: rel, subject: parse_subject(subject)}
-  end
-
-  defp parse_tuple_params(%{"shorthand" => shorthand}) do
-    case Parser.parse(shorthand) do
-      {:ok, tuple} -> tuple
-      {:error, _reason} -> %Tuple{}
+  # Parses every raw tuple, short-circuiting on the first parse error so
+  # malformed input is rejected with a 400 rather than silently dropped.
+  defp parse_all(raw_tuples) do
+    Enum.reduce_while(raw_tuples, {:ok, []}, fn raw, {:ok, acc} ->
+      case parse_tuple_params(raw) do
+        {:ok, tuple} -> {:cont, {:ok, [tuple | acc]}}
+        {:error, reason} -> {:halt, {:error, :parse, reason}}
+      end
+    end)
+    |> case do
+      {:ok, parsed} -> {:ok, Enum.reverse(parsed)}
+      other -> other
     end
   end
+
+  defp parse_tuple_params(%{
+         "namespace" => ns,
+         "object_id" => oid,
+         "relation" => rel,
+         "subject" => subject
+       }) do
+    case parse_subject(subject) do
+      {:ok, s} ->
+        case Parser.parse("#{ns}:#{oid}##{rel}@placeholder") do
+          {:ok, _} -> {:ok, %Tuple{namespace: ns, object_id: oid, relation: rel, subject: s}}
+          {:error, reason} -> {:error, reason}
+        end
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  defp parse_tuple_params(%{"shorthand" => shorthand}), do: Parser.parse(shorthand)
+
+  defp parse_tuple_params(_),
+    do: {:error, "tuple must include namespace, object_id, relation, subject (or shorthand)"}
 
   defp parse_subject(subject) when is_binary(subject) do
-    # Try to parse as shorthand first (userset form), fall back to user
-    case Parser.parse("x:x#x@#{subject}") do
-      {:ok, %Tuple{subject: s}} -> s
-      {:error, _} -> {:user, subject}
+    # Validate via the shorthand parser (handles both user and userset forms).
+    case Parser.parse("ns:obj#rel@#{subject}") do
+      {:ok, %Tuple{subject: s}} -> {:ok, s}
+      {:error, reason} -> {:error, reason}
     end
   end
 
-  defp parse_subject(%{"type" => "user", "id" => uid}), do: {:user, uid}
-  defp parse_subject(%{"type" => "userset", "namespace" => ns, "object_id" => oid, "relation" => rel}),
-    do: {:userset, ns, oid, rel}
+  defp parse_subject(%{"type" => "user", "id" => uid}) when is_binary(uid),
+    do: {:ok, {:user, uid}}
+
+  defp parse_subject(%{
+         "type" => "userset",
+         "namespace" => ns,
+         "object_id" => oid,
+         "relation" => rel
+       }),
+       do: {:ok, {:userset, ns, oid, rel}}
+
+  defp parse_subject(_), do: {:error, "invalid subject"}
 
   defp build_filter(params) do
     %{}
@@ -119,7 +154,12 @@ defmodule ZevalWeb.TupleController do
     %{namespace: ns, object_id: oid, relation: rel, subject: uid}
   end
 
-  defp format_tuple(%Tuple{namespace: ns, object_id: oid, relation: rel, subject: {:userset, us_ns, us_oid, us_rel}}) do
+  defp format_tuple(%Tuple{
+         namespace: ns,
+         object_id: oid,
+         relation: rel,
+         subject: {:userset, us_ns, us_oid, us_rel}
+       }) do
     %{namespace: ns, object_id: oid, relation: rel, subject: "#{us_ns}:#{us_oid}##{us_rel}"}
   end
 end

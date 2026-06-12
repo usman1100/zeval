@@ -12,7 +12,10 @@ defmodule ZevalCore.NamespaceTest do
     # Create a tenant first — namespace configs reference it
     tenant_id = UUID.generate()
     tenant_bin = Ecto.UUID.dump!(tenant_id)
-    Repo.insert_all("tenants", [%{id: tenant_bin, name: "test-tenant-#{System.unique_integer([:positive])}"}])
+
+    Repo.insert_all("tenants", [
+      %{id: tenant_bin, name: "test-tenant-#{System.unique_integer([:positive])}"}
+    ])
 
     on_exit(fn ->
       Repo.delete_all(ZevalCore.Namespace.NamespaceConfig)
@@ -136,7 +139,10 @@ defmodule ZevalCore.NamespaceTest do
 
       other_tid = UUID.generate()
       other_bin = Ecto.UUID.dump!(other_tid)
-      Repo.insert_all("tenants", [%{id: other_bin, name: "other-tenant-#{System.unique_integer([:positive])}"}])
+
+      Repo.insert_all("tenants", [
+        %{id: other_bin, name: "other-tenant-#{System.unique_integer([:positive])}"}
+      ])
 
       Namespace.write(other_tid, %{
         "name" => "other",

@@ -14,10 +14,10 @@ defmodule ZevalCore.Namespace.NamespaceConfig do
   @foreign_key_type :binary_id
 
   schema "namespace_configs" do
-    field :name, :string
-    field :config, :map
-    field :version, :integer, default: 1
-    field :tenant_id, :binary_id
+    field(:name, :string)
+    field(:config, :map)
+    field(:version, :integer, default: 1)
+    field(:tenant_id, :binary_id)
 
     timestamps(type: :utc_datetime_usec, inserted_at: :inserted_at, updated_at: false)
   end

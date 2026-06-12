@@ -18,6 +18,7 @@ defmodule ZevalCore.Namespace.Cache do
   @doc "Retrieve a cached config, or nil on miss."
   def get(tenant_id, name) do
     ensure_table()
+
     case :ets.lookup(@table_name, cache_key(tenant_id, name)) do
       [{_, config}] -> config
       [] -> nil
@@ -76,6 +77,9 @@ defmodule ZevalCore.Namespace.Cache do
       :named_table,
       read_concurrency: true
     ])
+  rescue
+    # Another process created the table between the whereis check and here.
+    ArgumentError -> :ok
   end
 
   defp cache_key(tenant_id, name), do: {tenant_id, name}

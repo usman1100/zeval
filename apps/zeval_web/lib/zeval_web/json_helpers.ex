@@ -32,7 +32,10 @@ defmodule ZevalWeb.JsonHelpers do
 
     conn
     |> put_resp_content_type("application/json")
-    |> send_resp(422, Jason.encode!(%{error: "validation failed", code: "validation_error", details: errors}))
+    |> send_resp(
+      422,
+      Jason.encode!(%{error: "validation failed", code: "validation_error", details: errors})
+    )
     |> halt()
   end
 

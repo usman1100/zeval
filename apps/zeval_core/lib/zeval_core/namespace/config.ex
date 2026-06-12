@@ -25,8 +25,8 @@ defmodule ZevalCore.Namespace.Config do
   import Ecto.Changeset
 
   embedded_schema do
-    field :name, :string
-    embeds_many :relations, ZevalCore.Namespace.Config.Relation
+    field(:name, :string)
+    embeds_many(:relations, ZevalCore.Namespace.Config.Relation)
   end
 
   defmodule Relation do
@@ -34,8 +34,8 @@ defmodule ZevalCore.Namespace.Config do
     use Ecto.Schema
 
     embedded_schema do
-      field :name, :string
-      field :rewrite, :map
+      field(:name, :string)
+      field(:rewrite, :map)
     end
   end
 

@@ -13,6 +13,9 @@ defmodule ZevalCore.Tuples do
 
   require Logger
 
+  @default_limit 1_000
+  @max_limit 10_000
+
   @doc """
   Writes one or more relation tuples. Accepts `%Tuple{}` structs or
   raw maps. Returns `{:ok, zookie}` with the number of written tuples
@@ -30,7 +33,9 @@ defmodule ZevalCore.Tuples do
         |> Enum.reduce(0, fn attrs, acc ->
           full_attrs = Map.put(attrs, :tenant_id, tenant_id)
 
-          case Repo.insert_all(RelationTuple, [full_attrs]) do
+          # on_conflict: :nothing makes writes idempotent against the partial
+          # unique indexes — a duplicate active tuple inserts 0 rows.
+          case Repo.insert_all(RelationTuple, [full_attrs], on_conflict: :nothing) do
             {1, _} -> acc + 1
             _ -> acc
           end
@@ -103,12 +108,15 @@ defmodule ZevalCore.Tuples do
     * `:consistency` — a zookie token string. When provided, only tuples
       inserted at or before the zookie's snapshot time are returned
       (and deleted tuples from after that snapshot are still visible).
+    * `:limit` — maximum rows to return (default #{@default_limit},
+      capped at #{@max_limit}). Reads are always bounded so a single call
+      can't load an unbounded result set.
 
   Returns a list of `%Tuple{}` structs.
   """
   @spec read(binary(), map(), keyword()) :: [Tuple.t()]
   def read(tenant_id, filter \\ %{}, opts \\ []) do
-    query = from t in RelationTuple, where: t.tenant_id == ^tenant_id
+    query = from(t in RelationTuple, where: t.tenant_id == ^tenant_id)
 
     query = apply_filter(query, filter)
 
@@ -116,26 +124,36 @@ defmodule ZevalCore.Tuples do
       case Keyword.get(opts, :consistency) do
         nil ->
           # No consistency token: only show active tuples
-          from t in query, where: is_nil(t.deleted_at)
+          from(t in query, where: is_nil(t.deleted_at))
 
         token ->
           # Zookie consistency: show tuples that existed at snapshot time
-          snap = Zookie.snapshot_at(token)
+          snap = Zookie.snapshot_at(token, tenant_id)
 
           if snap do
-            from t in query,
+            from(t in query,
               where:
                 t.inserted_at <= ^snap and
                   (is_nil(t.deleted_at) or t.deleted_at > ^snap)
+            )
           else
-            # Zookie not found — fall back to active-only
-            from t in query, where: is_nil(t.deleted_at)
+            # Zookie not found (or belongs to another tenant) — active-only
+            from(t in query, where: is_nil(t.deleted_at))
           end
       end
 
-    Repo.all(query)
+    limit = resolve_limit(Keyword.get(opts, :limit))
+
+    query
+    |> order_by([t], asc: t.inserted_at, asc: t.id)
+    |> limit(^limit)
+    |> Repo.all()
     |> Enum.map(&to_tuple/1)
   end
+
+  defp resolve_limit(nil), do: @default_limit
+  defp resolve_limit(n) when is_integer(n) and n > 0, do: min(n, @max_limit)
+  defp resolve_limit(_), do: @default_limit
 
   # -- Filter building --
 
@@ -194,17 +212,43 @@ defmodule ZevalCore.Tuples do
   # -- Delete query building --
 
   defp build_delete_query(tenant_id, attrs) do
-    query = from t in RelationTuple,
-      where: t.tenant_id == ^tenant_id and is_nil(t.deleted_at)
+    query =
+      from(t in RelationTuple,
+        where: t.tenant_id == ^tenant_id and is_nil(t.deleted_at)
+      )
 
-    query = if attrs[:namespace], do: from(t in query, where: t.namespace == ^attrs[:namespace]), else: query
-    query = if attrs[:object_id], do: from(t in query, where: t.object_id == ^attrs[:object_id]), else: query
-    query = if attrs[:relation], do: from(t in query, where: t.relation == ^attrs[:relation]), else: query
+    query =
+      if attrs[:namespace],
+        do: from(t in query, where: t.namespace == ^attrs[:namespace]),
+        else: query
 
-    if attrs[:subject_type] == "user" do
-      from t in query, where: t.subject_type == "user" and t.user_id == ^attrs[:user_id]
-    else
-      query
+    query =
+      if attrs[:object_id],
+        do: from(t in query, where: t.object_id == ^attrs[:object_id]),
+        else: query
+
+    query =
+      if attrs[:relation],
+        do: from(t in query, where: t.relation == ^attrs[:relation]),
+        else: query
+
+    # The subject MUST be narrowed to the specific subject being deleted.
+    # Falling through to the unscoped query here would soft-delete every
+    # tuple matching (namespace, object_id, relation), not just this subject.
+    case attrs[:subject_type] do
+      "user" ->
+        from(t in query,
+          where: t.subject_type == "user" and t.user_id == ^attrs[:user_id]
+        )
+
+      "userset" ->
+        from(t in query,
+          where:
+            t.subject_type == "userset" and
+              t.userset_namespace == ^attrs[:userset_namespace] and
+              t.userset_object_id == ^attrs[:userset_object_id] and
+              t.userset_relation == ^attrs[:userset_relation]
+        )
     end
   end
 
@@ -243,7 +287,12 @@ defmodule ZevalCore.Tuples do
   end
 
   defp to_relation_tuple_attrs(%{namespace: ns, object_id: oid, relation: rel, subject: subject}) do
-    to_relation_tuple_attrs(%Tuple{namespace: ns, object_id: oid, relation: rel, subject: subjectify(subject)})
+    to_relation_tuple_attrs(%Tuple{
+      namespace: ns,
+      object_id: oid,
+      relation: rel,
+      subject: subjectify(subject)
+    })
   end
 
   defp subjectify({:user, _} = s), do: s

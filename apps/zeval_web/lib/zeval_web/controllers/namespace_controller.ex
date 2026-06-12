@@ -25,9 +25,10 @@ defmodule ZevalWeb.NamespaceController do
     configs = Namespace.list(tenant_id)
 
     json(conn, %{
-      namespaces: Enum.map(configs, fn c ->
-        %{name: c.name, version: c.version}
-      end)
+      namespaces:
+        Enum.map(configs, fn c ->
+          %{name: c.name, version: c.version}
+        end)
     })
   end
 
