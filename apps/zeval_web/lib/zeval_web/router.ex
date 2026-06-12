@@ -43,6 +43,8 @@ defmodule ZevalWeb.Router do
     get "/login", DashboardSessionController, :new
     post "/login", DashboardSessionController, :create
     get "/logout", DashboardSessionController, :delete
+    get "/signup", DashboardSessionController, :signup_new
+    post "/signup", DashboardSessionController, :signup_create
   end
 
   # Dashboard — authenticated routes
