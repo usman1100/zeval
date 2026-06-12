@@ -22,6 +22,7 @@ defmodule ZevalWeb.DashboardLive.Sidebar do
         <.nav_link href="/dashboard/tuples" icon="database" active={@active == "tuples"}>Tuples</.nav_link>
         <.nav_link href="/dashboard/check" icon="fact_check" active={@active == "check"}>Check Tool</.nav_link>
         <.nav_link href="/dashboard/expand" icon="unfold_more" active={@active == "expand"}>Expand Tool</.nav_link>
+        <.nav_link href="/dashboard/docs" icon="menu_book" active={@active == "docs"}>API Reference</.nav_link>
       </nav>
       <div class="mt-auto pt-stack-md border-t border-border-subtle space-y-stack-xs">
         <.nav_link href="/dashboard/logout" icon="logout" active={false}>Sign Out</.nav_link>

@@ -86,6 +86,7 @@ defmodule ZevalWeb.Router do
       live("/tuples", DashboardLive.TupleLive, :index)
       live("/check", DashboardLive.CheckLive, :index)
       live("/expand", DashboardLive.ExpandLive, :index)
+      live("/docs", DashboardLive.DocsLive, :index)
     end
   end
 
