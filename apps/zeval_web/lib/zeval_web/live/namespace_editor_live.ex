@@ -89,7 +89,7 @@ defmodule ZevalWeb.DashboardLive.NamespaceEditorLive do
             <span class="material-symbols-outlined">account_tree</span>
             Relations
           </h3>
-          <button phx-click="add_relation"
+          <button type="button" phx-click="add_relation"
             class="border border-border-subtle text-text-secondary px-stack-md py-1.5 font-label-mono text-label-mono flex items-center gap-1 hover:text-text-primary hover:bg-surface-container-high transition-colors">
             <span class="material-symbols-outlined">add</span>
             Add Relation
@@ -108,7 +108,7 @@ defmodule ZevalWeb.DashboardLive.NamespaceEditorLive do
       </div>
 
       <div class="flex gap-stack-sm">
-        <button phx-click="save" phx-disable-with="Saving..."
+        <button type="button" phx-click="save" phx-disable-with="Saving..."
           class="bg-emerald-success text-background px-stack-md py-2 font-label-mono text-label-mono font-bold flex items-center gap-2 hover:opacity-90 transition-opacity">
           <span class="material-symbols-outlined">save</span>
           Deploy Changes
@@ -135,7 +135,7 @@ defmodule ZevalWeb.DashboardLive.NamespaceEditorLive do
             class="bg-transparent border-b border-border-subtle font-label-mono text-label-mono uppercase text-text-primary focus:border-white focus:ring-0 px-1 py-0.5 w-40"
             placeholder="relation_name" />
         </div>
-        <button phx-click="remove_relation" phx-value-rel-id={@rel.id}
+        <button type="button" phx-click="remove_relation" phx-value-rel-id={@rel.id}
           class="text-text-muted hover:text-ruby-error transition-colors">
           <span class="material-symbols-outlined">delete</span>
         </button>
@@ -153,7 +153,7 @@ defmodule ZevalWeb.DashboardLive.NamespaceEditorLive do
     <div class="border-l-2 border-border-subtle pl-stack-md" style={"margin-left: #{@depth * 12}px"}>
       <div class="flex items-center gap-2 mb-stack-xs">
         <label class="font-label-mono text-label-mono text-text-muted">Type</label>
-        <select name="rule_type" form="editor-form" phx-change="rule_set_type" phx-value-rule-id={@rule.id}
+        <select name={"rule_type[#{@rule.id}]"} form="editor-form" phx-change="rule_set_type"
           class="bg-background border border-border-subtle font-label-mono text-label-mono text-text-primary focus:ring-0 focus:border-white px-2 py-1">
           <option value="this" selected={@rule.type == "this"}>this</option>
           <option value="computed_userset" selected={@rule.type == "computed_userset"}>computed_userset</option>
@@ -178,13 +178,13 @@ defmodule ZevalWeb.DashboardLive.NamespaceEditorLive do
           <%= for child <- @rule.children do %>
             <div class="relative group">
               <.rule_block rule={child} depth={@depth + 1} />
-              <button phx-click="rule_remove_child" phx-value-rule-id={child.id} phx-value-parent-id={@rule.id}
+              <button type="button" phx-click="rule_remove_child" phx-value-rule-id={child.id} phx-value-parent-id={@rule.id}
                 class="absolute -top-1 -right-1 bg-surface-container-highest border border-border-subtle text-text-muted hover:text-ruby-error w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">
                 <span class="material-symbols-outlined text-[12px]">close</span>
               </button>
             </div>
           <% end %>
-          <button phx-click="rule_add_child" phx-value-rule-id={@rule.id}
+           <button type="button" phx-click="rule_add_child" phx-value-rule-id={@rule.id}
             class="text-text-muted hover:text-text-primary font-label-mono text-label-mono text-xs flex items-center gap-1">
             <span class="material-symbols-outlined">add</span>
             Add child
@@ -197,7 +197,7 @@ defmodule ZevalWeb.DashboardLive.NamespaceEditorLive do
           <div class="font-label-mono text-label-mono text-text-muted">Base</div>
           <div class="relative group">
             <.rule_block rule={@rule.base} depth={@depth + 1} />
-            <button phx-click="rule_remove_child" phx-value-rule-id={@rule.base.id} phx-value-parent-id={@rule.id}
+            <button type="button" phx-click="rule_remove_child" phx-value-rule-id={@rule.base.id} phx-value-parent-id={@rule.id}
               class="absolute -top-1 -right-1 bg-surface-container-highest border border-border-subtle text-text-muted hover:text-ruby-error w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">
               <span class="material-symbols-outlined text-[12px]">close</span>
             </button>
@@ -253,9 +253,9 @@ defmodule ZevalWeb.DashboardLive.NamespaceEditorLive do
         class="w-full bg-transparent p-stack-md font-code-block text-code-block text-text-primary focus:ring-0 border-none resize-none custom-scrollbar min-h-[400px]"
         placeholder="{ &quot;name&quot;: &quot;doc&quot;, &quot;relations&quot;: { ... } }"><%= @json_text %></textarea>
       <div class="bg-surface-container-low border-t border-border-subtle px-stack-md py-stack-sm flex gap-stack-sm">
-        <button phx-click="save_json"
+        <button type="button" phx-click="save_json"
           class="bg-emerald-success text-background px-stack-md py-1.5 font-label-mono text-label-mono font-bold hover:opacity-90 transition-opacity">Deploy Changes</button>
-        <button phx-click="json_validate"
+        <button type="button" phx-click="json_validate"
           class="border border-border-subtle text-text-secondary px-stack-md py-1.5 font-label-mono text-label-mono hover:text-text-primary transition-colors">Validate</button>
         <a href="/dashboard/namespaces"
           class="border border-border-subtle text-text-secondary px-stack-md py-1.5 font-label-mono text-label-mono hover:text-text-primary transition-colors">Cancel</a>
@@ -340,7 +340,9 @@ defmodule ZevalWeb.DashboardLive.NamespaceEditorLive do
     {:noreply, assign(socket, relations: rels)}
   end
 
-  def handle_event("rule_set_type", %{"rule-id" => rule_id, "rule_type" => type}, socket) do
+  def handle_event("rule_set_type", %{"_target" => ["rule_type", rule_id]} = params, socket) do
+    type = get_in(params, ["rule_type", rule_id])
+
     updater = fn rule ->
       base =
         if type == "exclusion" do

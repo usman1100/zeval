@@ -37,17 +37,17 @@
       </div>
     <% end %>
 
-    <%= if @mode == :visual do %>
-      <.visual_editor
-        namespace_name={@namespace_name}
-        tenant_id={@tenant_id}
-        tenants={@tenants}
-        relations={@relations}
-        saved={@saved}
-      />
-    <% else %>
-      <.json_editor json_text={@json_text} saved={@saved} />
-    <% end %>
-
-    <form id="editor-form"></form>
+    <form id="editor-form">
+      <%= if @mode == :visual do %>
+        <.visual_editor
+          namespace_name={@namespace_name}
+          tenant_id={@tenant_id}
+          tenants={@tenants}
+          relations={@relations}
+          saved={@saved}
+        />
+      <% else %>
+        <.json_editor json_text={@json_text} saved={@saved} />
+      <% end %>
+    </form>
   </div>
