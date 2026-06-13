@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: zeval-engine
+    env: docker
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: zeval-db
+          property: connectionString
+      - key: DATABASE_SSL
+        value: "true"
+      - key: POOL_SIZE
+        value: "10"
+      - key: ENGINE_PORT
+        value: "4000"
+      - key: PHX_HOST
+        value: zeval-engine.onrender.com
+      - key: SECRET_KEY_BASE
+        sync: false
+      - key: SESSION_SIGNING_SALT
+        sync: false
+      - key: SESSION_ENCRYPTION_SALT
+        sync: false
+      - key: LIVE_VIEW_SIGNING_SALT
+        sync: false
+      - key: METRICS_TOKEN
+        sync: false
+      - key: LOG_LEVEL
+        value: info
+
+databases:
+  - name: zeval-db
+    databaseName: zeval
+    plan: free
