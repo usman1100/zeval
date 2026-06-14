@@ -37,10 +37,15 @@ defmodule ZevalWeb.Router do
     plug(ZevalWeb.Plugs.MetricsAuth)
   end
 
-  # Public liveness/readiness probes + root redirect.
+  # Public liveness/readiness probes.
   scope "/", ZevalWeb do
     get("/health", HealthController, :health)
     get("/ready", HealthController, :ready)
+  end
+
+  # Public landing page (needs browser pipeline for CSRF/session).
+  scope "/", ZevalWeb do
+    pipe_through([:browser])
     get("/", PageController, :index)
   end
 
